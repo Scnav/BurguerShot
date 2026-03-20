@@ -643,7 +643,7 @@ app.get('/api/admin/eventos', verifyAdmin, (req, res) => {
 });
 
 app.post('/api/admin/eventos', verifyAdmin, (req, res) => {
-    const { titulo, data, horario, local, imagem, imagens } = req.body;
+    const { titulo, data, horario, local, imagem, imagens, tem_inscricao } = req.body;
     // Validar: pelo menos título ou imagem(s) deve ser fornecido
     if (!titulo && !imagem && (!imagens || imagens.length === 0)) {
         return res.status(400).json({ error: 'Título ou imagem é obrigatório' });
@@ -654,9 +654,10 @@ app.post('/api/admin/eventos', verifyAdmin, (req, res) => {
     // Tratar valores vazios como null
     const dataValue = data || null;
     const horarioValue = horario || null;
+    const temInscricaoValue = tem_inscricao ? 1 : 0;
 
-    db.run("INSERT INTO eventos (titulo, data, horario, local, imagem, imagens) VALUES (?, ?, ?, ?, ?, ?)", 
-        [titulo, dataValue, horarioValue, local || null, imagem || null, imagensJson], function(err) {
+    db.run("INSERT INTO eventos (titulo, data, horario, local, imagem, imagens, tem_inscricao) VALUES (?, ?, ?, ?, ?, ?, ?)", 
+        [titulo, dataValue, horarioValue, local || null, imagem || null, imagensJson, temInscricaoValue], function(err) {
         if (err) return res.status(500).json({ error: err.message });
         res.status(201).json({ 
             id: this.lastID, 
@@ -666,6 +667,7 @@ app.post('/api/admin/eventos', verifyAdmin, (req, res) => {
             local, 
             imagem, 
             imagens: imagens || [],
+            tem_inscricao: temInscricaoValue,
             created_at: new Date().toISOString() 
         });
     });
@@ -673,16 +675,17 @@ app.post('/api/admin/eventos', verifyAdmin, (req, res) => {
 
 app.put('/api/admin/eventos/:id', verifyAdmin, (req, res) => {
     const { id } = req.params;
-    const { titulo, data, horario, local, imagem, imagens } = req.body;
+    const { titulo, data, horario, local, imagem, imagens, tem_inscricao } = req.body;
 
     const imagensJson = imagens ? JSON.stringify(imagens) : null;
     
     // Tratar valores vazios como null
     const dataValue = data || null;
     const horarioValue = horario || null;
+    const temInscricaoValue = tem_inscricao ? 1 : 0;
 
-    db.run("UPDATE eventos SET titulo = ?, data = ?, horario = ?, local = ?, imagem = ?, imagens = ? WHERE id = ?", 
-        [titulo, dataValue, horarioValue, local || null, imagem || null, imagensJson, id], function(err) {
+    db.run("UPDATE eventos SET titulo = ?, data = ?, horario = ?, local = ?, imagem = ?, imagens = ?, tem_inscricao = ? WHERE id = ?", 
+        [titulo, dataValue, horarioValue, local || null, imagem || null, imagensJson, temInscricaoValue, id], function(err) {
         if (err) return res.status(500).json({ error: err.message });
         if (this.changes === 0) return res.status(404).json({ error: 'Evento não encontrado' });
         res.json({ message: 'Evento atualizado' });
@@ -708,6 +711,25 @@ app.post('/api/admin/eventos/fix-structure', verifyAdmin, (req, res) => {
         db.run("UPDATE eventos SET data = NULL WHERE data = '1899-01-01' OR data = '0000-00-00' OR data < '1900-01-01'", function(err2) {
             if (err2) return res.status(500).json({ error: err2.message });
             res.json({ message: 'Estrutura corrigida! Data allowing null' });
+        });
+    });
+});
+
+// Rota para adicionar coluna tem_inscricao na tabela eventos
+app.post('/api/admin/eventos/add-inscricao', verifyAdmin, (req, res) => {
+    // Primeiro verifica se a coluna já existe
+    db.all("SHOW COLUMNS FROM eventos LIKE 'tem_inscricao'", (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+        
+        if (rows.length > 0) {
+            // Coluna já existe
+            return res.json({ message: 'Coluna tem_inscricao já existe' });
+        }
+        
+        // Adiciona a coluna
+        db.run("ALTER TABLE eventos ADD COLUMN tem_inscricao TINYINT(1) DEFAULT 0", function(err2) {
+            if (err2) return res.status(500).json({ error: err2.message });
+            res.json({ message: 'Coluna tem_inscricao adicionada com sucesso!' });
         });
     });
 });

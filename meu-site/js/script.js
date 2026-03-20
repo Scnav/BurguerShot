@@ -585,6 +585,14 @@ async function carregarEventos() {
                     // Verificar se há informações de texto (título, data, horario, local)
                     const temTexto = evento.titulo || evento.data || evento.horario || evento.local;
                     
+                    // Verificar se o evento permite inscrição
+                    const permiteInscricao = evento.tem_inscricao === 1 || evento.tem_inscricao === true;
+                    
+                    // Botão de inscrição: aparece se tem_inscricao estiver habilitado OU se tiver data
+                    const botaoInscricao = permiteInscricao || evento.data ? 
+                        `<button onclick="abrirInscricao(${evento.id}, '${evento.titulo.replace(/'/g, "\\'")}')" style="background: var(--verde-principal); color: white; border: none; padding: 0.8rem 1.5rem; border-radius: 8px; cursor: pointer; margin-top: 1rem;">📝 Inscrever-se</button>` 
+                        : '';
+                    
                     // Se não tem nenhuma informação de texto, mostra apenas a imagem (se houver)
                     const infoHtml = (temTexto || temImagens) ? `
                         ${evento.titulo ? `<div style="font-size: 3rem; color: var(--dourado); margin-bottom: 1rem;">
@@ -595,7 +603,7 @@ async function carregarEventos() {
                             ${dataFormatada}${evento.horario ? ' às ' + evento.horario : ''}
                         </p>` : ''}
                         ${evento.local ? `<p>${evento.local}</p>` : ''}
-                        ${evento.data ? `<button onclick="abrirInscricao(${evento.id}, '${evento.titulo.replace(/'/g, "\\'")}')" style="background: var(--verde-principal); color: white; border: none; padding: 0.8rem 1.5rem; border-radius: 8px; cursor: pointer; margin-top: 1rem;">📝 Inscrever-se</button>` : ''}
+                        ${botaoInscricao}
                     ` : '';
                     
                     return `

@@ -251,6 +251,7 @@ function createMySQLTables(pool, callback) {
             local VARCHAR(255),
             imagem VARCHAR(500),
             imagens JSON,
+            tem_inscricao TINYINT(1) DEFAULT 0,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,

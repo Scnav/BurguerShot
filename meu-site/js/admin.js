@@ -360,6 +360,7 @@ function mostrarFormEvento(evento = null) {
     const titulo = document.getElementById('eventoTitulo');
     const data = document.getElementById('eventoData');
     const local = document.getElementById('eventoLocal');
+    const temInscricao = document.getElementById('eventoTemInscricao');
 
     if (evento) {
         title.textContent = 'Editar Evento';
@@ -370,12 +371,14 @@ function mostrarFormEvento(evento = null) {
         const hora = evento.horario || '00:00';
         data.value = `${dataObj.toISOString().slice(0, 10)}T${hora}`;
         local.value = evento.local || '';
+        temInscricao.checked = evento.tem_inscricao === 1 || evento.tem_inscricao === true;
     } else {
         title.textContent = 'Novo Evento';
         id.value = '';
         titulo.value = '';
         data.value = '';
         local.value = '';
+        temInscricao.checked = false;
     }
 
     form.style.display = 'block';
@@ -390,6 +393,7 @@ async function salvarEvento() {
     const titulo = document.getElementById('eventoTitulo').value;
     const dataInput = document.getElementById('eventoData').value;
     const local = document.getElementById('eventoLocal').value;
+    const temInscricao = document.getElementById('eventoTemInscricao').checked;
 
     if (!titulo) {
         mostrarToast('❌ Título é obrigatório', 'error');
@@ -416,7 +420,7 @@ async function salvarEvento() {
                 'Content-Type': 'application/json',
                 ...getAdminHeaders()
             },
-            body: JSON.stringify({ titulo, data, horario, local })
+            body: JSON.stringify({ titulo, data, horario, local, tem_inscricao: temInscricao })
         });
 
         if (!response.ok) throw new Error('Erro ao salvar evento');
