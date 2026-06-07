@@ -214,12 +214,22 @@ async function notifyAlert(item, type, changePercent) {
   if (!("Notification" in window)) return;
   if (!item) return;
   const port = document.location.port || "3000";
+  let history = item.priceHistory || [];
+
+  try {
+    const histRes = await fetch(`http://localhost:${port}/api/history?name=${encodeURIComponent(item.name)}`);
+    if (histRes.ok) {
+      const serverHistory = await histRes.json();
+      history = serverHistory.length ? serverHistory : history;
+    }
+  } catch {}
+
   const now = new Date();
   const oneDayAgo = now.getTime() - 24 * 60 * 60 * 1000;
   const oneWeekAgo = now.getTime() - 7 * 24 * 60 * 60 * 1000;
   const oneMonthAgo = now.getTime() - 30 * 24 * 60 * 60 * 1000;
   const oneYearAgo = now.getTime() - 365 * 24 * 60 * 60 * 1000;
-  const history = item.priceHistory || [];
+
   const pricesToday = history.filter(h => h.timestamp >= oneDayAgo).map(h => h.price);
   const pricesWeek = history.filter(h => h.timestamp >= oneWeekAgo).map(h => h.price);
   const pricesMonth = history.filter(h => h.timestamp >= oneMonthAgo).map(h => h.price);
@@ -234,7 +244,7 @@ async function notifyAlert(item, type, changePercent) {
   const yearMin = pricesYear.length ? Math.min(...pricesYear) : null;
   const yearMax = pricesYear.length ? Math.max(...pricesYear) : null;
 
-  console.log(`[ALERTA] ${item.name}: ${type === "rise" ? "↑" : "↓"} ${changePercent.toFixed(1)}%`);
+  console.log(`[ALERTA] ${item.name}: ${type === "rise" ? "↑" : "↓"} ${changePercent.toFixed(1)}% (Ref: ${formatCurrency(item.referencePrice)} → ${formatCurrency(item.currentPrice)})`);
   if (dayMin && dayMax) console.log(`  Hoje: ${formatCurrency(dayMin)} - ${formatCurrency(dayMax)}`);
   if (weekMin && weekMax) console.log(`  Semana: ${formatCurrency(weekMin)} - ${formatCurrency(weekMax)}`);
   if (monthMin && monthMax) console.log(`  Mês: ${formatCurrency(monthMin)} - ${formatCurrency(monthMax)}`);
