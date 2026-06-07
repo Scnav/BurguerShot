@@ -214,47 +214,44 @@ async function notifyAlert(item, type, changePercent) {
   if (!("Notification" in window)) return;
   if (!item) return;
   const port = document.location.port || "3000";
-  try {
-    const statsRes = await fetch(`http://localhost:${port}/api/stats?name=${encodeURIComponent(item.name)}`);
-    const stats = statsRes.ok ? await statsRes.json() : {};
-    const now = new Date();
-    const oneDayAgo = now.getTime() - 24 * 60 * 60 * 1000;
-    const oneWeekAgo = now.getTime() - 7 * 24 * 60 * 60 * 1000;
-    const oneMonthAgo = now.getTime() - 30 * 24 * 60 * 60 * 1000;
-    const oneYearAgo = now.getTime() - 365 * 24 * 60 * 60 * 1000;
-    const history = item.priceHistory || [];
-    const pricesToday = history.filter(h => h.timestamp >= oneDayAgo).map(h => h.price);
-    const pricesWeek = history.filter(h => h.timestamp >= oneWeekAgo).map(h => h.price);
-    const pricesMonth = history.filter(h => h.timestamp >= oneMonthAgo).map(h => h.price);
-    const pricesYear = history.filter(h => h.timestamp >= oneYearAgo).map(h => h.price);
-    const dayMin = pricesToday.length ? Math.min(...pricesToday) : null;
-    const dayMax = pricesToday.length ? Math.max(...pricesToday) : null;
-    const weekMin = pricesWeek.length ? Math.min(...pricesWeek) : null;
-    const weekMax = pricesWeek.length ? Math.max(...pricesWeek) : null;
-    const monthMin = pricesMonth.length ? Math.min(...pricesMonth) : null;
-    const monthMax = pricesMonth.length ? Math.max(...pricesMonth) : null;
-    const yearMin = pricesYear.length ? Math.min(...pricesYear) : null;
-    const yearMax = pricesYear.length ? Math.max(...pricesYear) : null;
-    const parts = [];
-    if (dayMin && dayMax) parts.push(`Hoje: ${formatCurrency(dayMin)}-${formatCurrency(dayMax)}`);
-    if (weekMin && weekMax) parts.push(`Semana: ${formatCurrency(weekMin)}-${formatCurrency(weekMax)}`);
-    if (monthMin && monthMax) parts.push(`Mês: ${formatCurrency(monthMin)}-${formatCurrency(monthMax)}`);
-    if (yearMin && yearMax) parts.push(`Ano: ${formatCurrency(yearMin)}-${formatCurrency(yearMax)}`);
-    const statsInfo = parts.join("\n");
-    const body = type === "rise"
-      ? `${item.name} valorizou ${changePercent.toFixed(1)}%\n${statsInfo}`.trim()
-      : `${item.name} caiu ${changePercent.toFixed(1)}%\n${statsInfo}`.trim();
-    const show = () => new Notification("Alerta de preço Rust", { body, icon: item.image });
-    if (Notification.permission === "granted") show();
-    else if (Notification.permission !== "denied") Notification.requestPermission().then(show);
-  } catch {
-    const body = type === "rise"
-      ? `${item.name} valorizou ${changePercent.toFixed(1)}%`
-      : `${item.name} caiu ${changePercent.toFixed(1)}%`;
-    const show = () => new Notification("Alerta de preço Rust", { body, icon: item.image });
-    if (Notification.permission === "granted") show();
-    else if (Notification.permission !== "denied") Notification.requestPermission().then(show);
-  }
+  const now = new Date();
+  const oneDayAgo = now.getTime() - 24 * 60 * 60 * 1000;
+  const oneWeekAgo = now.getTime() - 7 * 24 * 60 * 60 * 1000;
+  const oneMonthAgo = now.getTime() - 30 * 24 * 60 * 60 * 1000;
+  const oneYearAgo = now.getTime() - 365 * 24 * 60 * 60 * 1000;
+  const history = item.priceHistory || [];
+  const pricesToday = history.filter(h => h.timestamp >= oneDayAgo).map(h => h.price);
+  const pricesWeek = history.filter(h => h.timestamp >= oneWeekAgo).map(h => h.price);
+  const pricesMonth = history.filter(h => h.timestamp >= oneMonthAgo).map(h => h.price);
+  const pricesYear = history.filter(h => h.timestamp >= oneYearAgo).map(h => h.price);
+
+  const dayMin = pricesToday.length ? Math.min(...pricesToday) : null;
+  const dayMax = pricesToday.length ? Math.max(...pricesToday) : null;
+  const weekMin = pricesWeek.length ? Math.min(...pricesWeek) : null;
+  const weekMax = pricesWeek.length ? Math.max(...pricesWeek) : null;
+  const monthMin = pricesMonth.length ? Math.min(...pricesMonth) : null;
+  const monthMax = pricesMonth.length ? Math.max(...pricesMonth) : null;
+  const yearMin = pricesYear.length ? Math.min(...pricesYear) : null;
+  const yearMax = pricesYear.length ? Math.max(...pricesYear) : null;
+
+  console.log(`[ALERTA] ${item.name}: ${type === "rise" ? "↑" : "↓"} ${changePercent.toFixed(1)}%`);
+  if (dayMin && dayMax) console.log(`  Hoje: ${formatCurrency(dayMin)} - ${formatCurrency(dayMax)}`);
+  if (weekMin && weekMax) console.log(`  Semana: ${formatCurrency(weekMin)} - ${formatCurrency(weekMax)}`);
+  if (monthMin && monthMax) console.log(`  Mês: ${formatCurrency(monthMin)} - ${formatCurrency(monthMax)}`);
+  if (yearMin && yearMax) console.log(`  Ano: ${formatCurrency(yearMin)} - ${formatCurrency(yearMax)}`);
+
+  const parts = [];
+  if (dayMin && dayMax) parts.push(`Hoje: ${formatCurrency(dayMin)}-${formatCurrency(dayMax)}`);
+  if (weekMin && weekMax) parts.push(`Semana: ${formatCurrency(weekMin)}-${formatCurrency(weekMax)}`);
+  if (monthMin && monthMax) parts.push(`Mês: ${formatCurrency(monthMin)}-${formatCurrency(monthMax)}`);
+  if (yearMin && yearMax) parts.push(`Ano: ${formatCurrency(yearMin)}-${formatCurrency(yearMax)}`);
+  const statsInfo = parts.join("\n");
+  const body = type === "rise"
+    ? `${item.name} valorizou ${changePercent.toFixed(1)}%\n${statsInfo}`.trim()
+    : `${item.name} caiu ${changePercent.toFixed(1)}%\n${statsInfo}`.trim();
+  const show = () => new Notification("Alerta de preço Rust", { body, icon: item.image });
+  if (Notification.permission === "granted") show();
+  else if (Notification.permission !== "denied") Notification.requestPermission().then(show);
 }
 
 function renderAlerts() {
