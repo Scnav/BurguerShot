@@ -306,6 +306,8 @@ function renderAlerts() {
 function detectMovement(item) {
   const current = Number(item.currentPrice);
   const reference = Number(item.referencePrice);
+  const riseThreshold = item.riseThreshold || state.riseThreshold;
+  const dropThreshold = item.dropThreshold || state.dropThreshold;
   if (isNaN(current) || isNaN(reference) || !isFinite(current) || !isFinite(reference)) {
     console.warn(`[DEBUG] Invalid price - current: ${current}, reference: ${reference}`);
     return null;
@@ -316,7 +318,7 @@ function detectMovement(item) {
   }
 
   const changeVsReference = ((current - reference) / reference) * 100;
-  console.log(`[DEBUG] ${item.name}: current=${current}, ref=${reference}, change=${changeVsReference.toFixed(2)}%`);
+  console.log(`[DEBUG] ${item.name}: current=${current}, ref=${reference}, change=${changeVsReference.toFixed(2)}%, riseThr=${riseThreshold}, dropThr=${dropThreshold}`);
 
   const now = new Date();
   const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
@@ -333,17 +335,17 @@ function detectMovement(item) {
 
   if (Math.abs(changeVsReference) < 0.01) return null;
 
-  if (changeVsReference >= state.riseThreshold && !hasAlertedAboveThreshold(item.id)) {
+  if (changeVsReference >= riseThreshold && !hasAlertedAboveThreshold(item.id)) {
     alertType = "rise";
     alertPercent = changeVsReference;
     setAlertedAboveThreshold(item.id, true);
-  } else if (changeVsReference <= -state.dropThreshold && !hasAlertedBelowThreshold(item.id)) {
+  } else if (changeVsReference <= -dropThreshold && !hasAlertedBelowThreshold(item.id)) {
     alertType = "drop";
     alertPercent = Math.abs(changeVsReference);
     setAlertedBelowThreshold(item.id, true);
   }
 
-  if (Math.abs(changeVsReference) < state.riseThreshold && Math.abs(changeVsReference) < state.dropThreshold) {
+  if (Math.abs(changeVsReference) < riseThreshold && Math.abs(changeVsReference) < dropThreshold) {
     clearAlertedThresholds(item.id);
   }
 
@@ -531,6 +533,8 @@ function loadState() {
       const data = JSON.parse(saved);
       state.items = (data.items || []).map(item => ({
         ...item,
+        riseThreshold: item.riseThreshold || state.riseThreshold,
+        dropThreshold: item.dropThreshold || state.dropThreshold,
         lastUpdated: item.lastUpdated ? new Date(item.lastUpdated) : null
       }));
       state.alerts = (data.alerts || []).map(alert => ({
@@ -580,6 +584,8 @@ async function addSkin(name) {
     currentPrice: price,
     previousPrice: price,
     referencePrice: price,
+    riseThreshold: Number(elements.riseInput?.value || 5),
+    dropThreshold: Number(elements.dropInput?.value || 5),
     priceHistory: price != null ? [{ price, timestamp: Date.now() }] : [],
     lastUpdated: price != null ? new Date() : null,
   };
@@ -760,12 +766,12 @@ function init() {
     });
   }
 
-  if (elements.intervalInput) elements.intervalInput.value = "10";
-  if (elements.dropInput) elements.dropInput.value = "5";
-  if (elements.riseInput) elements.riseInput.value = "5";
-  loadState();
-  updateStatus(false, "Parado");
-  renderAlerts();
+loadState();
+   if (elements.intervalInput) elements.intervalInput.value = "10";
+   if (elements.dropInput) elements.dropInput.value = "5";
+   if (elements.riseInput) elements.riseInput.value = "5";
+   updateStatus(false, "Parado");
+   renderAlerts();
   updateStats();
 }
 
