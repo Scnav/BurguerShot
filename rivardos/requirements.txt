@@ -1,0 +1,7 @@
+Flask>=3.1,<4
+flask-cors>=6,<7
+pandas>=3,<4
+openpyxl>=3.1,<4
+Pillow>=12,<13
+requests>=2.33,<3
+schedule>=1.2,<2

@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RivardosPlay — Site de Jogos</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+   <header class="topbar">
+    <div class="logo">
+      <div class="logo-icon">🎮</div>
+      <div>Rivardos<span>Play</span></div>
+    </div>
+
+    <nav class="nav">
+      <a href="#" class="active">Início</a>
+      <a href="#">Jogos</a>
+      <a href="#">Biblioteca</a>
+      <a href="#">Notícias</a>
+    </nav>
+
+    <div class="mobile-menu">☰</div>
+
+    <div class="top-actions">
+      <label class="search">
+        <input type="text" id="searchInput" placeholder="Buscar jogos..." />
+        <span>🔍</span>
+      </label>
+
+      <div class="bell">🔔</div>
+
+<div class="user-panel" id="userPanel" style="display: none;">
+          <div class="user">
+            <div class="avatar" id="userAvatar">🛡️</div>
+            <div class="user-info-clickable" id="userInfoClickable">
+              <strong id="userName">PlayerOne</strong>
+              <small>Nível <span id="userLevel">24</span></small>
+            </div>
+          </div>
+          <button id="logoutBtn" title="Sair" style="background: none; border: none; font-size: 18px; cursor: pointer; margin-left: 8px;">🚪</button>
+        </div>
+
+        <!-- Player Info Panel -->
+        <div class="player-info-panel" id="playerInfoPanel">
+          <div class="player-info-header">
+            <h3>Informações do Jogador</h3>
+            <div class="header-actions">
+              <button id="editPlayerInfo" class="edit-btn">Editar</button>
+              <button id="closePlayerInfo" class="close-btn">×</button>
+            </div>
+          </div>
+          <div class="player-info-content">
+            <div class="info-item">
+              <span class="info-label">Nome de Usuário:</span>
+              <span class="info-value display-value" id="playerUsernameDisplay"></span>
+              <input type="text" class="edit-input" id="editUsername" placeholder="Nome de usuário" />
+            </div>
+            <div class="info-item">
+              <span class="info-label">Email:</span>
+              <span class="info-value display-value" id="playerEmailDisplay"></span>
+              <input type="email" class="edit-input" id="editEmail" placeholder="Email" />
+            </div>
+            <div class="info-item">
+              <span class="info-label">Nível:</span>
+              <span class="info-value display-value" id="playerLevelDisplay"></span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Avatar:</span>
+              <span class="info-value display-value" id="playerAvatarDisplay"></span>
+              <select class="edit-input" id="editAvatar">
+                <option value="🛡️">🛡️ Escudo</option>
+                <option value="⚔️">⚔️ Espada</option>
+                <option value="🎯">🎯 Alvo</option>
+                <option value="🏁">🏁 Bandeira</option>
+                <option value="🚩">🚩 Sinal</option>
+                <option value="🎮">🎮 Controle</option>
+                <option value="💎">💎 Diamante</option>
+                <option value="👑">👑 Coroa</option>
+                <option value="🎪">🎪 Palhaço</option>
+                <option value="🚀">🚀 Foguete</option>
+                <option value="👾">👾 Alienígena</option>
+                <option value="👻">👻 Fantasma</option>
+              </select>
+            </div>
+            <div class="info-item">
+              <span class="info-label">XP Atual:</span>
+              <span class="info-value display-value" id="playerXpDisplay">1250/1500</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Jogos Favoritos:</span>
+              <span class="info-value display-value" id="playerFavoritesDisplay">5</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Horas Jogadas:</span>
+              <span class="info-value display-value" id="playerHoursDisplay">124h</span>
+            </div>
+          </div>
+          <div class="player-info-footer">
+            <button id="savePlayerInfo" class="btn btn-primary">Salvar</button>
+            <button id="cancelEditPlayerInfo" class="btn btn-ghost">Cancelar</button>
+          </div>
+        </div>
+
+      <a href="login.html" class="btn btn-ghost" id="loginBtn">Login</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="container">
+        <div class="hero-content">
+          <h1>Viva grandes <span>aventuras</span></h1>
+          <p>Os melhores jogos, as maiores batalhas e uma comunidade épica te esperam!</p>
+
+          <div class="hero-buttons">
+            <a href="#games" class="btn btn-primary">🎮 Explorar jogos</a>
+            <a href="#" class="btn btn-ghost">▶ Assistir trailer</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="container">
+      <section class="category-bar">
+        <div class="cat active" data-filter="all">
+          <div class="cat-icon">🎮</div>
+          <div><strong>Ação</strong><small>128 jogos</small></div>
+        </div>
+        <div class="cat" data-filter="aventura">
+          <div class="cat-icon">⚔️</div>
+          <div><strong>Aventura</strong><small>96 jogos</small></div>
+        </div>
+        <div class="cat" data-filter="rpg">
+          <div class="cat-icon">🛡️</div>
+          <div><strong>RPG</strong><small>73 jogos</small></div>
+        </div>
+        <div class="cat" data-filter="tiro">
+          <div class="cat-icon">🎯</div>
+          <div><strong>Tiro</strong><small>64 jogos</small></div>
+        </div>
+        <div class="cat" data-filter="estrategia">
+          <div class="cat-icon">🚩</div>
+          <div><strong>Estratégia</strong><small>48 jogos</small></div>
+        </div>
+        <div class="cat" data-filter="corrida">
+          <div class="cat-icon">🏁</div>
+          <div><strong>Corrida</strong><small>35 jogos</small></div>
+        </div>
+        <div class="cat" data-filter="all">
+          <div class="cat-icon">▦</div>
+          <div><strong>Ver todos</strong><small>444 jogos</small></div>
+        </div>
+      </section>
+
+      <section id="games">
+        <div class="section-head">
+          <h2 class="section-title"><span>🔥</span> Jogos em destaque</h2>
+          <a href="#" class="view-all">VER TODOS ❯</a>
+        </div>
+
+        <div class="games-grid" id="gamesGrid">
+          <article class="game-card" data-name="Shadows of War" data-category="acao aventura">
+            <img src="https://images.unsplash.com/photo-1542751110-97427bbecf20?auto=format&fit=crop&w=900&q=90" alt="Shadows of War">
+            <button class="favorite">♡</button>
+            <div class="game-info">
+              <h3 class="game-title small">Shadows of War</h3>
+              <div class="meta">
+                <div class="tags"><span class="tag">Ação</span><span class="tag">Aventura</span></div>
+                <div class="rating"><span>★</span> 4.8</div>
+              </div>
+            </div>
+          </article>
+
+          <article class="game-card" data-name="Eldryn Legacy" data-category="rpg aventura">
+            <img src="https://images.unsplash.com/photo-1518709268805-4e9042af2176?auto=format&fit=crop&w=900&q=90" alt="Eldryn Legacy">
+            <button class="favorite">♡</button>
+            <div class="game-info">
+              <h3 class="game-title">Eldryn Legacy</h3>
+              <div class="meta">
+                <div class="tags"><span class="tag">RPG</span><span class="tag">Mundo Aberto</span></div>
+                <div class="rating"><span>★</span> 4.9</div>
+              </div>
+            </div>
+          </article>
+
+          <article class="game-card" data-name="Frontline Zero Hour" data-category="tiro acao">
+            <img src="https://images.unsplash.com/photo-1560253023-3ec5d502959f?auto=format&fit=crop&w=900&q=90" alt="Frontline Zero Hour">
+            <button class="favorite">♡</button>
+            <div class="game-info">
+              <h3 class="game-title small">Frontline <br>Zero Hour</h3>
+              <div class="meta">
+                <div class="tags"><span class="tag">Tiro</span><span class="tag">Multijogador</span></div>
+                <div class="rating"><span>★</span> 4.6</div>
+              </div>
+            </div>
+          </article>
+
+          <article class="game-card" data-name="Speed Ultimate" data-category="corrida">
+            <img src="https://images.unsplash.com/photo-1503736334956-4c8f8e92946d?auto=format&fit=crop&w=900&q=90" alt="Speed Ultimate">
+            <button class="favorite">♡</button>
+            <div class="game-info">
+              <h3 class="game-title small">Speed Ultimate</h3>
+              <div class="meta">
+                <div class="tags"><span class="tag">Corrida</span><span class="tag">Esportes</span></div>
+                <div class="rating"><span>★</span> 4.7</div>
+              </div>
+            </div>
+          </article>
+
+          <button class="side-arrow" id="shuffleBtn">›</button>
+        </div>
+      </section>
+
+      <section class="features">
+        <div class="feature">
+          <div class="feature-icon">🏆</div>
+          <div><strong>Conquistas</strong><p>Desafios e recompensas exclusivas</p></div>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">👥</div>
+          <div><strong>Comunidade ativa</strong><p>Milhares de jogadores online</p></div>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">🎁</div>
+          <div><strong>Conteúdo exclusivo</strong><p>Eventos, drops e muito mais</p></div>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">🛡️</div>
+          <div><strong>Segurança</strong><p>Sua conta protegida sempre</p></div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>

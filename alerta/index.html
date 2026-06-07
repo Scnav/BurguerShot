@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rust Skin Watch</title>
+    <link rel="stylesheet" href="assets/style.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+</head>
+<body>
+<main class="app-shell">
+  <section class="topbar">
+    <div>
+      <p class="eyebrow">Rust Skin Watch</p>
+      <h1>Monitor de Queda de Preço</h1>
+    </div>
+    <div class="status-strip">
+      <span class="status-dot" id="statusDot"></span>
+      <span id="statusText">Parado</span>
+    </div>
+  </section>
+
+  <section class="control-panel">
+    <form id="skinForm" class="skin-form">
+      <label>
+        Skin
+        <input id="skinInput" type="text" placeholder="Ex: Psycho Room Facemask" autocomplete="off" list="skinsDatalist" required />
+        <datalist id="skinsDatalist"></datalist>
+      </label>
+      <label>
+        Intervalo
+        <select id="intervalInput">
+          <option value="5">5 segundos</option>
+          <option value="10" selected>10 segundos</option>
+          <option value="20">20 segundos</option>
+          <option value="30">30 segundos</option>
+          <option value="60">60 segundos</option>
+        </select>
+      </label>
+      <label>
+        Alerta de queda
+        <select id="dropInput">
+          <option value="3">3%</option>
+          <option value="5" selected>5%</option>
+          <option value="10">10%</option>
+          <option value="15">15%</option>
+          <option value="20">20%</option>
+        </select>
+      </label>
+      <label>
+        Valorização
+        <select id="riseInput">
+          <option value="3">3%</option>
+          <option value="5" selected>5%</option>
+          <option value="10">10%</option>
+          <option value="15">15%</option>
+          <option value="20">20%</option>
+        </select>
+      </label>
+      <button type="submit" class="btn-primary">Adicionar</button>
+    </form>
+    <div class="actions">
+      <button id="startBtn" type="button" class="btn-success">▶ Iniciar</button>
+      <button id="stopBtn" type="button" class="btn-dark">❚❚ Pausar</button>
+      <button id="clearAlertsBtn" type="button" class="btn-dark">Limpar alertas</button>
+      <button id="clearAllBtn" type="button" class="btn-danger">Limpar tudo</button>
+    </div>
+  </section>
+
+  <div class="main-content">
+    <section class="table-panel">
+      <div class="section-header">
+        <h2>Skins Monitoradas</h2>
+        <span id="requestTimer">Próxima requisição: --</span>
+      </div>
+      <div class="cards-grid" id="watchlistBody"></div>
+    </section>
+
+    <aside class="alerts-panel">
+      <div class="section-header">
+        <h2>🔔 Alertas</h2>
+        <span id="alertCount">0</span>
+      </div>
+      <div id="alertsList" class="alerts-list">
+        <div class="empty-alerts">
+          <div class="bell">🔔</div>
+          <h3>Nenhum alerta encontrado</h3>
+          <p>Quando uma skin atingir o limite configurado ela aparecerá aqui.</p>
+        </div>
+      </div>
+    </aside>
+  </div>
+</main>
+
+<div id="chartModal" class="modal">
+   <div class="modal-content">
+     <div class="modal-header">
+       <h2 id="chartModalTitle">Histórico</h2>
+       <button id="steamMarketBtn" type="button" class="modal-button" data-action="open-steam" title="Abrir no Steam Market">
+         <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L10 14v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+       </button>
+       <button type="button" class="close-button" data-action="close-modal">×</button>
+     </div>
+     <div class="modal-body">
+       <canvas id="priceChart"></canvas>
+       <div id="chartStats" class="chart-stats"></div>
+     </div>
+   </div>
+ </div>
+
+ <div id="setRefModal" class="modal">
+   <div class="modal-content">
+     <div class="modal-header">
+       <h2>Definir Valor de Referência</h2>
+       <button type="button" class="close-button" data-action="close-ref-modal">×</button>
+     </div>
+     <div class="modal-body">
+       <p style="margin:0 0 12px 0;font-size:14px;color:var(--muted)">Skin: <span id="refSkinName" style="color:var(--text);font-weight:600"></span></p>
+       <label style="display:block;margin-bottom:12px">
+         Valor de referência (R$)
+         <input id="refValueInput" type="number" step="0.01" min="0" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);background:#0b1220;color:var(--text);margin-top:6px" />
+       </label>
+       <div style="display:flex;gap:10px">
+         <button id="saveRefBtn" type="button" class="btn-primary">Salvar</button>
+         <button type="button" class="btn-dark" data-action="close-ref-modal">Cancelar</button>
+       </div>
+     </div>
+   </div>
+ </div>
+
+ <script src="assets/app.js"></script>
+</body>
+</html>

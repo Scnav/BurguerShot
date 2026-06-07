@@ -1,0 +1,11 @@
+-- SQLite database (rivardosplay.db) is created automatically by server.js
+-- No manual setup required - the server creates the database on first run
+
+-- Table structure (auto-created):
+-- CREATE TABLE IF NOT EXISTS users (
+--   id INTEGER PRIMARY KEY AUTOINCREMENT,
+--   username TEXT UNIQUE NOT NULL,
+--   email TEXT UNIQUE NOT NULL,
+--   password TEXT NOT NULL,
+--   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+-- )

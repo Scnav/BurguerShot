@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Registrar - RivardosPlay</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="logo">
+      <div class="logo-icon">🎮</div>
+      <div>Rivardos<span>Play</span></div>
+    </div>
+
+    <nav class="nav">
+      <a href="index.html">Início</a>
+      <a href="#">Jogos</a>
+      <a href="#">Biblioteca</a>
+      <a href="#">Notícias</a>
+    </nav>
+
+    <div class="mobile-menu">☰</div>
+
+    <div class="top-actions">
+      <a href="login.html" class="btn btn-ghost">Login</a>
+    </div>
+  </header>
+
+  <script src="script.js"></script>
+
+  <main style="min-height: 100vh; display: flex; align-items: center; justify-content: center;">
+    <div class="auth-container">
+      <div class="section-head" style="justify-content: center;">
+        <h2 class="section-title"><span>📝</span> Registrar</h2>
+      </div>
+
+      <form class="auth-form active" id="registerForm">
+        <div class="form-group">
+          <input type="text" id="regUsername" placeholder="Nome de usuário" required />
+        </div>
+        <div class="form-group">
+          <input type="email" id="regEmail" placeholder="Email" required />
+        </div>
+        <div class="form-group">
+          <input type="password" id="regPassword" placeholder="Senha" required />
+        </div>
+        <div class="form-group">
+          <input type="password" id="regConfirmPassword" placeholder="Confirmar senha" required />
+        </div>
+        <button type="submit" class="btn btn-primary">Criar Conta</button>
+        <p style="text-align: center; margin-top: 15px; color: var(--muted);">
+          Já tem conta? <a href="login.html" style="color: var(--purple);">Login</a>
+        </p>
+        <div id="registerMessage" style="text-align: center; margin-top: 10px; color: var(--purple);"></div>
+      </form>
+    </div>
+  </main>
+
+  <script>
+    document.getElementById('registerForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const username = document.getElementById('regUsername').value;
+      const email = document.getElementById('regEmail').value;
+      const password = document.getElementById('regPassword').value;
+      const confirmPassword = document.getElementById('regConfirmPassword').value;
+      const message = document.getElementById('registerMessage');
+      
+      if (password !== confirmPassword) {
+        message.style.color = '#ff4444';
+        message.textContent = 'As senhas não coincidem';
+        return;
+      }
+      
+      try {
+        const response = await fetch('/api/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, email, password })
+        });
+        const data = await response.json();
+        if (response.ok) {
+          message.style.color = '#00ff00';
+          message.textContent = 'Conta criada com sucesso! Redirecionando...';
+          setTimeout(() => {
+            window.location.href = 'login.html';
+          }, 1500);
+        } else {
+          message.style.color = '#ff4444';
+          message.textContent = data.error || 'Erro ao registrar';
+        }
+      } catch (error) {
+        message.style.color = '#ff4444';
+        message.textContent = 'Erro de conexão';
+      }
+    });
+  </script>
+</body>
+</html>

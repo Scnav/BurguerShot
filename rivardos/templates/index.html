@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+<title>Inventário PRO</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<link rel="stylesheet"
+href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<div class="app">
+
+    <!-- SIDEBAR -->
+
+    <aside class="sidebar">
+
+        <div class="logo">
+
+            <div class="logo-box">
+                <i class="fa-solid fa-cube"></i>
+            </div>
+
+            <div>
+                <h1>MEU INVENTÁRIO</h1>
+                <span>Dashboard PRO</span>
+            </div>
+
+        </div>
+
+        <div class="menu">
+
+            <div class="menu-item active" data-page="inventario">
+
+                <div class="menu-icon">
+                    <i class="fa-solid fa-box"></i>
+                </div>
+
+                <div class="menu-title">
+                    Inventário
+                </div>
+
+                <div class="badge" id="menu-badge-total">0</div>
+
+            </div>
+
+            <div class="menu-item" data-page="caixas">
+
+                <div class="menu-icon">
+                    <i class="fa-solid fa-shirt"></i>
+                </div>
+
+                <div class="menu-title">
+                    Rust
+                </div>
+
+            </div>
+
+            <div class="menu-item" data-page="compras">
+
+                <div class="menu-icon">
+                    <i class="fa-solid fa-cart-shopping"></i>
+                </div>
+
+                <div class="menu-title">
+                    Compras
+                </div>
+
+            </div>
+
+            <div class="menu-item" data-page="relatorios">
+
+                <div class="menu-icon">
+                    <i class="fa-solid fa-chart-column"></i>
+                </div>
+
+                <div class="menu-title">
+                    Relatórios
+                </div>
+
+            </div>
+
+            <div class="menu-item" data-page="logs">
+
+                <div class="menu-icon">
+                    <i class="fa-solid fa-file-lines"></i>
+                </div>
+
+                <div class="menu-title">
+                    Logs
+                </div>
+
+                <div class="badge" id="menu-badge-logs">0</div>
+
+            </div>
+
+            <div class="menu-item" data-page="config">
+
+                <div class="menu-icon">
+                    <i class="fa-solid fa-gear"></i>
+                </div>
+
+                <div class="menu-title">
+                    Configurações
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="user">
+
+            <div class="avatar">
+                <i class="fa-solid fa-user"></i>
+            </div>
+
+            <div>
+                <strong>Administrador</strong>
+                <p style="font-size:12px;color:#8fa1c2;">
+                    Sistema PRO
+                </p>
+            </div>
+
+        </div>
+
+    </aside>
+
+    <!-- MAIN -->
+
+    <main class="main">
+
+        <!-- INVENTARIO -->
+
+        <section class="page active" id="inventario">
+
+            <div class="topbar">
+
+                <div class="page-title">
+                    <h2>Inventário</h2>
+                    <p>Gerencie e acompanhe todos os itens do seu inventário.</p>
+                </div>
+
+                <div class="actions">
+
+                    <button class="btn btn-blue" onclick="openModal()">
+                        Abrir
+                    </button>
+
+                    <button class="btn btn-green" onclick="openModal()">
+                        Novo
+                    </button>
+
+                    <button class="btn btn-dark" id="btn-atualizar" onclick="loadItems(); loadStats(); loadLogs();">
+                        Atualizar
+                    </button>
+
+                    <button class="btn btn-dark" onclick="exportItems()">
+                        Exportar
+                    </button>
+
+                </div>
+
+            </div>
+
+            <!-- STATS -->
+
+            <div class="stats">
+
+                <div class="stat">
+                    <small>Total de Itens</small>
+                    <h3 id="stat-total">0</h3>
+                </div>
+
+                <div class="stat">
+                    <small>Valor Bruto</small>
+                    <h3 id="stat-bruto">R$0</h3>
+                </div>
+
+                <div class="stat">
+                    <small>Taxas Steam</small>
+                    <h3 id="stat-taxas">R$0</h3>
+                </div>
+
+                <div class="stat">
+                    <small>Valor Líquido</small>
+                    <h3 id="stat-liquido">R$0</h3>
+                </div>
+
+                <div class="stat">
+                    <small>Resultado</small>
+                    <h3 id="stat-resultado">R$0</h3>
+                </div>
+
+            </div>
+
+            <!-- TOOLBAR -->
+
+            <div class="toolbar">
+
+                <input class="search" placeholder="Buscar caixas..." id="search-input" oninput="filterItems(this.value)">
+
+                <select class="select" id="filter-type">
+                    <option value="">Todos os tipos</option>
+                </select>
+
+                <select class="select" id="sort-select">
+                    <option value="">Ordenar por</option>
+                </select>
+
+            </div>
+
+            <!-- CARDS -->
+
+            <div class="cards" id="cards">
+
+                <!-- Cards serão gerados dinamicamente -->
+
+            </div>
+
+        </section>
+
+        <!-- RUST -->
+
+        <section class="page" id="caixas">
+
+            <div class="topbar">
+
+                <div class="page-title">
+                    <h2>Rust</h2>
+                    <p>Gerencie skins de Rust importadas da planilha Rustskins.</p>
+                </div>
+
+                <div class="actions">
+
+                    <input type="file" id="rust-file-input" accept=".xlsx,.xls,.csv" style="display:none" onchange="importRustSpreadsheet(this.files[0])">
+
+                    <button class="btn btn-blue" onclick="document.getElementById('rust-file-input').click()">
+                        Importar
+                    </button>
+
+                    <button class="btn btn-green" onclick="openRustModal()">
+                        Novo
+                    </button>
+
+                    <button class="btn btn-dark" onclick="loadRustItems(); loadRustStats();">
+                        Atualizar
+                    </button>
+
+                    <button class="btn btn-dark" onclick="updateRustPrices()">
+                        Steam
+                    </button>
+
+                    <button class="btn btn-dark" onclick="exportRustItems()">
+                        Exportar
+                    </button>
+
+                </div>
+
+            </div>
+
+            <div class="stats">
+
+                <div class="stat">
+                    <small>Skins Rust</small>
+                    <h3 id="rust-stat-total">0</h3>
+                </div>
+
+                <div class="stat">
+                    <small>Valor Bruto</small>
+                    <h3 id="rust-stat-bruto">R$0</h3>
+                </div>
+
+                <div class="stat">
+                    <small>Taxas Steam</small>
+                    <h3 id="rust-stat-taxas">R$0</h3>
+                </div>
+
+                <div class="stat">
+                    <small>Valor Líquido</small>
+                    <h3 id="rust-stat-liquido">R$0</h3>
+                </div>
+
+                <div class="stat">
+                    <small>Resultado</small>
+                    <h3 id="rust-stat-resultado">R$0</h3>
+                </div>
+
+            </div>
+
+            <div class="toolbar">
+
+                <input class="search" placeholder="Buscar skins Rust..." id="rust-search-input" oninput="filterRustItems(this.value)">
+
+            </div>
+
+            <div class="cards" id="rust-cards">
+
+                <!-- Cards Rust serão gerados dinamicamente -->
+
+            </div>
+
+        </section>
+
+        <!-- COMPRAS -->
+
+        <section class="page" id="compras">
+
+            <div class="topbar">
+
+                <div class="page-title">
+                    <h2>Compras</h2>
+                    <p>Histórico completo de compras.</p>
+                </div>
+
+            </div>
+
+            <div class="table-container">
+
+                <table>
+
+                    <thead>
+
+                        <tr>
+                            <th>Data</th>
+                            <th>Item</th>
+                            <th>Tipo</th>
+                            <th>Quantidade</th>
+                            <th>Valor</th>
+                        </tr>
+
+                    </thead>
+
+                    <tbody id="purchases-table-body">
+
+                        <!-- Dados carregados dinamicamente -->
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </section>
+
+        <!-- RELATORIOS -->
+
+        <section class="page" id="relatorios">
+
+            <div class="topbar">
+
+                <div class="page-title">
+                    <h2>Relatórios</h2>
+                    <p>Análises e métricas do inventário.</p>
+                </div>
+
+            </div>
+
+            <div class="charts">
+
+                <div class="chart-box">
+
+                    <canvas id="lineChart"></canvas>
+
+                </div>
+
+                <div class="chart-box">
+
+                    <canvas id="pieChart"></canvas>
+
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- LOGS -->
+
+        <section class="page" id="logs">
+
+            <div class="topbar">
+
+                <div class="page-title">
+                    <h2>Logs do Sistema</h2>
+                    <p>Atividades recentes do sistema.</p>
+                </div>
+
+            </div>
+
+            <div class="logs" id="logs-list">
+
+                <!-- Logs carregados dinamicamente -->
+
+            </div>
+
+        </section>
+
+        <!-- CONFIG -->
+
+        <section class="page" id="config">
+
+            <div class="topbar">
+
+                <div class="page-title">
+                    <h2>Configurações</h2>
+                    <p>Personalize o sistema.</p>
+                </div>
+
+            </div>
+
+            <div class="settings">
+
+                <div class="settings-menu">
+
+                    <button class="btn btn-blue active" onclick="switchSettingsTab(this, 'geral')">
+                        Geral
+                    </button>
+
+                    <button class="btn btn-dark" onclick="switchSettingsTab(this, 'integracoes')">
+                        Integrações
+                    </button>
+
+                    <button class="btn btn-dark" onclick="switchSettingsTab(this, 'seguranca')">
+                        Segurança
+                    </button>
+
+                </div>
+
+                <div class="settings-content">
+
+                    <div id="settings-geral">
+                        <div class="form-group">
+
+                            <label>Nome do Sistema</label>
+
+                            <input class="form-control" id="settings-name" value="Meu Inventário PRO">
+
+                        </div>
+
+                        <div class="form-group">
+
+                            <label>Idioma</label>
+
+                            <select class="form-control">
+
+                                <option>Português</option>
+
+                            </select>
+
+                        </div>
+                    </div>
+
+                    <div id="settings-integracoes" style="display:none;">
+                        <div class="form-group">
+                            <label>API Key Steam</label>
+                            <input class="form-control" type="password" placeholder="Insira sua API Key">
+                        </div>
+                    </div>
+
+                    <div id="settings-seguranca" style="display:none;">
+                        <div class="form-group">
+                            <label>Senha Atual</label>
+                            <input class="form-control" type="password" placeholder="Senha atual">
+                        </div>
+                        <div class="form-group">
+                            <label>Nova Senha</label>
+                            <input class="form-control" type="password" placeholder="Nova senha">
+                        </div>
+                    </div>
+
+                    <button class="btn btn-blue" onclick="saveSettings()">
+                        Salvar Alterações
+                    </button>
+
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+</div>
+
+<!-- MODAL NOVO/EDITAR ITEM -->
+
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal()">
+    <div class="modal" onclick="event.stopPropagation()">
+
+        <div class="modal-header">
+            <h2 id="modal-title">Novo Item</h2>
+            <button class="modal-close" onclick="closeModal()">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <form id="item-form" onsubmit="saveItem(event)">
+
+            <input type="hidden" id="form-item-id">
+
+            <div class="form-group">
+                <label>Nome do Item</label>
+                <input type="text" class="form-control" id="form-name" placeholder="Nome do item" required>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Quantidade</label>
+                    <input type="number" class="form-control" id="form-quantity" placeholder="0" step="0.01" min="0" required>
+                </div>
+                <div class="form-group">
+                    <label>Preço Compra (R$)</label>
+                    <input type="number" class="form-control" id="form-purchase-price" placeholder="0.00" step="0.01" min="0" required>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Preço Atual (R$)</label>
+                    <input type="number" class="form-control" id="form-current-price" placeholder="0.00" step="0.01" min="0" required>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-dark" onclick="closeModal()">Cancelar</button>
+                <button type="submit" class="btn btn-green" id="form-submit-btn">Salvar</button>
+            </div>
+
+        </form>
+
+    </div>
+</div>
+
+<!-- MODAL NOVA/EDITAR SKIN RUST -->
+
+<div class="modal-overlay" id="rust-modal-overlay" onclick="closeRustModal()">
+    <div class="modal" onclick="event.stopPropagation()">
+
+        <div class="modal-header">
+            <h2 id="rust-modal-title">Nova Skin Rust</h2>
+            <button class="modal-close" onclick="closeRustModal()">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <form id="rust-item-form" onsubmit="saveRustItem(event)">
+
+            <input type="hidden" id="rust-form-item-id">
+
+            <div class="form-group">
+                <label>Nome da Skin</label>
+                <input type="text" class="form-control" id="rust-form-name" placeholder="Nome da skin Rust" required>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Quantidade</label>
+                    <input type="number" class="form-control" id="rust-form-quantity" placeholder="0" step="0.01" min="0" required>
+                </div>
+                <div class="form-group">
+                    <label>Preço Compra (R$)</label>
+                    <input type="number" class="form-control" id="rust-form-purchase-price" placeholder="0.00" step="0.01" min="0" required>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Preço Atual (R$)</label>
+                    <input type="number" class="form-control" id="rust-form-current-price" placeholder="0.00" step="0.01" min="0" required>
+                </div>
+                <div class="form-group">
+                    <label>Steam Market Hash Name</label>
+                    <input type="text" class="form-control" id="rust-form-steam-id" placeholder="Opcional">
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-dark" onclick="closeRustModal()">Cancelar</button>
+                <button type="submit" class="btn btn-green" id="rust-form-submit-btn">Salvar</button>
+            </div>
+
+        </form>
+
+    </div>
+</div>
+
+<!-- MODAL DETALHES DO ITEM -->
+
+<div class="modal-overlay" id="details-modal-overlay" onclick="closeDetailsModal()">
+    <div class="modal modal-details" onclick="event.stopPropagation()">
+
+        <div class="modal-header">
+            <h2 id="details-title">Detalhes do Item</h2>
+            <button class="modal-close" onclick="closeDetailsModal()">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <div id="details-content">
+            <!-- Detalhes carregados dinamicamente -->
+        </div>
+
+        <div class="modal-footer" style="justify-content: flex-end;">
+            <button type="button" class="btn btn-blue" onclick="closeDetailsModal()">Fechar</button>
+        </div>
+
+    </div>
+</div>
+
+<script src="/static/script.js"></script>
+</body>
+</html>

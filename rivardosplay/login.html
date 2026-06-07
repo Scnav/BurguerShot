@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login - RivardosPlay</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="logo">
+      <div class="logo-icon">🎮</div>
+      <div>Rivardos<span>Play</span></div>
+    </div>
+
+    <nav class="nav">
+      <a href="index.html">Início</a>
+      <a href="#">Jogos</a>
+      <a href="#">Biblioteca</a>
+      <a href="#">Notícias</a>
+    </nav>
+
+    <div class="mobile-menu">☰</div>
+
+    <div class="top-actions">
+      <a href="register.html" class="btn btn-ghost">Registrar</a>
+    </div>
+  </header>
+
+  <script src="script.js"></script>
+
+  <main style="min-height: 100vh; display: flex; align-items: center; justify-content: center;">
+    <div class="auth-container">
+      <div class="section-head" style="justify-content: center;">
+        <h2 class="section-title"><span>🔐</span> Login</h2>
+      </div>
+
+      <form class="auth-form active" id="loginForm">
+        <div class="form-group">
+          <input type="email" id="loginEmail" placeholder="Email" required />
+        </div>
+        <div class="form-group">
+          <input type="password" id="loginPassword" placeholder="Senha" required />
+        </div>
+        <button type="submit" class="btn btn-primary">Entrar</button>
+        <p style="text-align: center; margin-top: 15px; color: var(--muted);">
+          Não tem conta? <a href="register.html" style="color: var(--purple);">Registrar</a>
+        </p>
+        <div id="loginMessage" style="text-align: center; margin-top: 10px; color: var(--purple);"></div>
+      </form>
+    </div>
+  </main>
+
+  <script>
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('loginEmail').value;
+      const password = document.getElementById('loginPassword').value;
+      const message = document.getElementById('loginMessage');
+      
+      try {
+        const response = await fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await response.json();
+        if (response.ok) {
+          message.style.color = '#00ff00';
+          message.textContent = 'Login realizado com sucesso!';
+          localStorage.setItem('rivardosplay_user', JSON.stringify({
+            id: data.user.id,
+            username: data.user.username,
+            email: data.user.email,
+            level: data.user.level || 0, // Use level from DB or default to 0
+            avatar: data.user.avatar || '🛡️'
+          }));
+          setTimeout(() => {
+            window.location.href = 'index.html';
+          }, 1000);
+        } else {
+          message.style.color = '#ff4444';
+          message.textContent = data.error || 'Erro ao fazer login';
+        }
+      } catch (error) {
+        message.style.color = '#ff4444';
+        message.textContent = 'Erro de conexão';
+      }
+    });
+  </script>
+</body>
+</html>

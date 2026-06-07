@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Protocolo Militar - Sistema de Protocolos Pessoais</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="logo">
+                <span class="logo-icon">⚔️</span>
+                <h1>PROTOCOLO MILITAR</h1>
+            </div>
+            <p class="subtitle">Sistema de Protocolos Pessoais</p>
+        </header>
+
+        <!-- Seção de Timer/Relógio -->
+        <section class="timer-section">
+            <div class="timer-display">
+                <div class="current-time" id="currentTime">00:00:00</div>
+                <div class="current-date" id="currentDate">--/--/----</div>
+            </div>
+            <div class="timer-controls">
+                <div class="protocol-selector">
+                    <label for="timerProtocolSelect">Protocolo para Timer:</label>
+                    <select id="timerProtocolSelect">
+                        <option value="">Selecione um protocolo...</option>
+                    </select>
+                </div>
+                <div class="timer-buttons">
+                    <button id="startTimer" class="btn btn-primary">▶ Iniciar</button>
+                    <button id="pauseTimer" class="btn btn-secondary">⏸ Pausar</button>
+                    <button id="resetTimer" class="btn btn-secondary">↺ Resetar</button>
+                </div>
+                <div class="timer-settings">
+                    <label for="timerDuration">Duração (min):</label>
+                    <input type="number" id="timerDuration" min="1" max="120" value="25">
+                </div>
+            </div>
+            <div class="timer-progress">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+            <div class="timer-status" id="timerStatus">Aguardando início...</div>
+        </section>
+
+        <main class="main-content">
+            <section class="form-section">
+                <h2 class="section-title">Criar Novo Protocolo</h2>
+                <form id="protocolForm" class="protocol-form">
+                    <div class="form-group">
+                        <label for="protocolName">Nome do Protocolo</label>
+                        <input type="text" id="protocolName" placeholder="Ex: Protocolo de Foco Matinal" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="trigger">Gatilho (Trigger)</label>
+                        <textarea id="trigger" placeholder="Descreva a situação ou condição que ativa este protocolo..." required></textarea>
+                        <span class="hint">O que inicia a necessidade deste protocolo?</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Passo a Passo (Procedimentos)</label>
+                        <div id="stepsContainer" class="steps-container">
+                            <div class="step-item">
+                                <span class="step-number">1</span>
+                                <textarea placeholder="Primeiro passo..." required></textarea>
+                                <button type="button" class="btn-remove-step" title="Remover passo">✕</button>
+                            </div>
+                        </div>
+                        <button type="button" id="addStep" class="btn-add-step">+ Adicionar Passo</button>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="escapeValve">Válvula de Escape (Escape Valve)</label>
+                        <textarea id="escapeValve" placeholder="Condição ou ação que permite encerrar o protocolo se necessário..." required></textarea>
+                        <span class="hint">Como e quando você pode sair deste protocolo com segurança?</span>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Salvar Protocolo</button>
+                        <button type="button" id="clearForm" class="btn btn-secondary">Limpar</button>
+                    </div>
+                </form>
+            </section>
+
+            <section class="list-section">
+                <div class="list-header">
+                    <h2 class="section-title">Protocolos Ativos</h2>
+                    <div class="search-box">
+                        <input type="text" id="searchInput" placeholder="Buscar protocolo...">
+                    </div>
+                </div>
+                <div id="protocolsList" class="protocols-list">
+                    <!-- Protocolos serão inseridos aqui via JavaScript -->
+                </div>
+                <div id="emptyState" class="empty-state">
+                    <span class="empty-icon">📋</span>
+                    <p>Nenhum protocolo criado ainda.</p>
+                    <p class="empty-hint">Crie seu primeiro protocolo usando o formulário ao lado.</p>
+                </div>
+            </section>
+        </main>
+
+        <!-- Modal de Visualização/Edição -->
+        <div id="protocolModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="modalTitle">Detalhes do Protocolo</h3>
+                    <button class="modal-close" id="closeModal">&times;</button>
+                </div>
+                <div class="modal-body" id="modalBody">
+                    <!-- Conteúdo do protocolo será inserido aqui -->
+                </div>
+                <div class="modal-footer">
+                    <button id="editProtocol" class="btn btn-secondary">Editar</button>
+                    <button id="deleteProtocol" class="btn btn-danger">Excluir</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

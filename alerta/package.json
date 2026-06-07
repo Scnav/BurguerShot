@@ -1,0 +1,26 @@
+{
+  "name": "rust-skin-watch",
+  "version": "1.0.0",
+  "description": "Monitor de quedas de preço de skins de Rust na Steam Market",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": [
+    "rust",
+    "steam",
+    "skins",
+    "price",
+    "monitor"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@playwright/test": "^1.60.0",
+    "cheerio": "^1.2.0",
+    "puppeteer-core": "^25.1.0",
+    "xml2js": "^0.6.2",
+    "xpath": "^0.0.34"
+  }
+}

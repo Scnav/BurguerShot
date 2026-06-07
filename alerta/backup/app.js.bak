@@ -1,0 +1,498 @@
+const state = {
+  items: [],
+  alerts: [],
+  isRunning: false,
+  requestInterval: null,
+  alertCooldowns: new Map(),
+  isLoadingSkins: false,
+  dropThreshold: 5,
+  riseThreshold: 5,
+};
+
+const elements = {
+  form: document.querySelector("#skinForm"),
+  skinInput: document.querySelector("#skinInput"),
+  intervalInput: document.querySelector("#intervalInput"),
+  dropInput: document.querySelector("#dropInput"),
+  startBtn: document.querySelector("#startBtn"),
+  stopBtn: document.querySelector("#stopBtn"),
+  clearAlertsBtn: document.querySelector("#clearAlertsBtn"),
+  clearAllBtn: document.querySelector("#clearAllBtn"),
+  body: document.querySelector("#watchlistBody"),
+  emptyState: document.querySelector("#emptyState"),
+  statusDot: document.querySelector("#statusDot"),
+  statusText: document.querySelector("#statusText"),
+  requestTimer: document.querySelector("#requestTimer"),
+  alertsList: document.querySelector("#alertsList"),
+  alertCount: document.querySelector("#alertCount"),
+  chartModal: document.querySelector("#chartModal"),
+  chartModalTitle: document.querySelector("#chartModalTitle"),
+  skinsDatalist: document.querySelector("#skinsDatalist"),
+  statSkins: document.querySelector("#statSkins"),
+  statInterval: document.querySelector("#statInterval"),
+  statStatus: document.querySelector("#statStatus"),
+  statSince: document.querySelector("#statSince"),
+};
+
+const PLACEHOLDER_SVG = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48'%3E%3Crect width='48' height='48' fill='%231a1a2e'/%3E%3Ctext x='24' y='28' font-size='9' text-anchor='middle' fill='white'%3ERust%3C/text%3E%3C/svg%3E";
+
+function formatCurrency(value) {
+  if (value == null || isNaN(value)) return "R$ --";
+  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
+}
+
+function formatTime(date) {
+  return new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" }).format(date);
+}
+
+function formatDelta(prev, current) {
+  if (prev == null || current == null) return "R$ --";
+  const delta = current - prev;
+  const sign = delta >= 0 ? "+" : "";
+  const color = delta < 0 ? "var(--success)" : delta > 0 ? "var(--danger)" : "inherit";
+  return `<span style="color:${color}">${sign}${formatCurrency(delta)}</span>`;
+}
+
+function updateStatus(active, text) {
+  state.isRunning = active;
+  if (!elements.statusDot || !elements.statusText) return;
+  elements.statusDot.className = `status-dot ${active ? "running" : "waiting"}`;
+  elements.statusText.textContent = text;
+  if (elements.statStatus) elements.statStatus.textContent = active ? "Ativo" : "Parado";
+  if (elements.statSince) elements.statSince.textContent = active ? `Desde ${formatTime(new Date())}` : "-";
+  const toggle = (btn, ok) => {
+    btn.disabled = !ok;
+    if (ok) btn.removeAttribute("disabled");
+    else btn.setAttribute("disabled", "");
+  };
+  toggle(elements.startBtn, !active);
+  toggle(elements.stopBtn, active);
+}
+
+function createSparkline(canvasId, data) {
+  const ctx = document.getElementById(canvasId);
+  if (!ctx) return;
+  if (ctx.chart) ctx.chart.destroy();
+  ctx.chart = new Chart(ctx, {
+    type: "line",
+    data: {
+      labels: data.map((_, i) => i + 1),
+      datasets: [
+        {
+          data,
+          borderColor: "#22c55e",
+          borderWidth: 2,
+          pointRadius: 0,
+          tension: 0.4,
+        },
+      ],
+    },
+    options: {
+      plugins: { legend: false },
+      scales: { x: { display: false }, y: { display: false } },
+      responsive: true,
+      maintainAspectRatio: false,
+    },
+  });
+}
+
+function renderCard(item) {
+  const card = document.createElement("div");
+  card.className = "skin-card";
+  card.dataset.id = item.id;
+
+  const safeImage = (item.image && item.image.length > 10 && item.image.startsWith("http")) ? item.image : PLACEHOLDER_SVG;
+
+  const sparkData = (item.priceHistory || []).slice(-14).map((p) => p.price);
+  const sparkId = `spark-${item.id}`;
+
+  const move = detectMovement(item);
+  const changeRef = move ? ((item.referencePrice - item.currentPrice) / item.referencePrice) * 100 : null;
+  const changeDaily = move && move.dailyChange !== null ? move.dailyChange : null;
+
+  card.innerHTML = `
+    <img class="skin-thumb" src="${safeImage}" alt="${item.name}" />
+    <div class="skin-info">
+      <h3 title="${item.name}">${item.name}</h3>
+      <div class="appid">App 252490</div>
+      <div class="skin-price">${formatCurrency(item.currentPrice)}</div>
+      <div class="skin-spark"><canvas id="${sparkId}"></canvas></div>
+      <div class="skin-meta">
+        <span>Atualizado ${item.lastUpdated ? `há ${formatTime(item.lastUpdated)}` : "-"}</span>
+      </div>
+    </div>
+    <div class="skin-movement">
+      ${changeRef !== null ? `<div class="movement ${changeRef > 0 ? 'positive' : changeRef < 0 ? 'negative' : ''}">Ref: ${changeRef > 0 ? '+' : ''}${changeRef.toFixed(2)}%</div>` : `<div class="movement muted">Sem referência</div>`}
+      ${changeDaily !== null ? `<div class="movement ${changeDaily <= 0 ? 'positive' : 'negative'}">Hoje: ${changeDaily <= 0 ? '' : '+'}${formatCurrency(changeDaily)}</div>` : `<div class="movement muted">Hoje: -</div>`}
+    </div>
+    <div class="card-actions">
+      <button class="btn-dark small" data-action="open-history">Histórico</button>
+      <button class="btn-dark small" data-action="set-reference">Definir ref.</button>
+      <button class="btn-danger small" data-action="remove">Remover</button>
+    </div>
+  `;
+
+  if (sparkData.length >= 2) {
+    setTimeout(() => createSparkline(sparkId, sparkData), 0);
+  }
+
+  return card;
+}
+
+function refreshCard(item) {
+  const card = document.querySelector(`.skin-card[data-id="${item.id}"]`);
+  if (!card) return;
+
+  const move = detectMovement(item);
+  const changeRef = move ? ((item.referencePrice - item.currentPrice) / item.referencePrice) * 100 : null;
+  const changeDaily = move && move.dailyChange !== null ? move.dailyChange : null;
+
+  const priceEl = card.querySelector(".skin-price");
+  if (priceEl) priceEl.textContent = formatCurrency(item.currentPrice);
+
+  const updatedEl = card.querySelector(".skin-meta span");
+  if (updatedEl) updatedEl.textContent = `Atualizado ${item.lastUpdated ? `há ${formatTime(item.lastUpdated)}` : "-"}`;
+
+  const moveEl = card.querySelector(".skin-movement");
+  if (moveEl) {
+    moveEl.innerHTML = `
+      ${changeRef !== null ? `<div class="movement ${changeRef > 0 ? 'positive' : changeRef < 0 ? 'negative' : ''}">Ref: ${changeRef > 0 ? '+' : ''}${changeRef.toFixed(2)}%</div>` : `<div class="movement muted">Sem referência</div>`}
+      ${changeDaily !== null ? `<div class="movement ${changeDaily <= 0 ? 'positive' : 'negative'}">Hoje: ${changeDaily <= 0 ? '' : '+'}${formatCurrency(changeDaily)}</div>` : `<div class="movement muted">Hoje: -</div>`}
+    `;
+  }
+
+  const sparkData = (item.priceHistory || []).slice(-14).map((p) => p.price);
+  const sparkId = `spark-${item.id}`;
+  if (sparkData.length >= 2) {
+    createSparkline(sparkId, sparkData);
+  }
+}
+
+function addAlert(item, changePercent) {
+  state.alerts.unshift({
+    id: crypto.randomUUID(),
+    name: item.name,
+    currentPrice: item.currentPrice,
+    previousPrice: item.previousPrice,
+    changePercent,
+    alertType: changePercent < 0 ? "rise" : "drop",
+    alertPercent: Math.abs(changePercent),
+    date: new Date(),
+  });
+  state.alerts = state.alerts.slice(0, 30);
+  renderAlerts();
+  notifyAlert(item, changePercent < 0 ? "rise" : "drop", changePercent);
+}
+
+function notifyAlert(type, changePercent) {
+  if (!("Notification" in window")) return;
+  const item = state.items.find((i) => i.currentPrice != null);
+  if (!item) return;
+  const body = type === "rise"
+    ? `${item.name} valorizou ${changePercent.toFixed(1)}%`
+    : `${item.name} caiu ${changePercent.toFixed(1)}%`;
+  const show = () => new Notification("Alerta de preço Rust", { body, icon: item.image });
+  if (Notification.permission === "granted") show();
+  else if (Notification.permission !== "denied") Notification.requestPermission().then(show);
+}
+
+function renderAlerts() {
+  if (!elements.alertsList || !elements.alertCount) return;
+  elements.alertCount.textContent = state.alerts.length;
+  if (state.alerts.length === 0) {
+    elements.alertsList.innerHTML = `
+      <div class="empty-alerts">
+        <div class="bell">🔔</div>
+        <h3>Nenhum alerta encontrado</h3>
+        <p>Quando uma skin atingir o limite configurado ela aparecerá aqui.</p>
+      </div>
+    `;
+    return;
+  }
+  elements.alertsList.innerHTML = state.alerts
+    .map((alert) => {
+      const isRise = alert.alertType === "rise";
+      const cls = isRise ? "rise" : "drop";
+      const text = isRise ? `↑ ${alert.alertPercent.toFixed(1)}% (valorizou)` : `↓ ${alert.alertPercent.toFixed(1)}% (caiu)`;
+      return `
+        <div class="alert-item ${cls}">
+          <div class="alert-body">
+            <strong>${alert.name}</strong>
+            <span>${formatCurrency(alert.previousPrice)} → ${formatCurrency(alert.currentPrice)}</span>
+            <small>${formatTime(alert.date)}</small>
+          </div>
+          <div class="alert-badge">${text}</div>
+        </div>
+      `;
+    })
+    .join("");
+}
+
+function detectMovement(item) {
+  if (!item.currentPrice || !item.referencePrice || item.priceHistory.length < 2) return null;
+
+  const changeVsReference = ((item.referencePrice - item.currentPrice) / item.referencePrice) * 100;
+  const changeVsPrevious = ((item.previousPrice - item.currentPrice) / item.previousPrice) * 100;
+
+  const now = new Date();
+  const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const todayPrices = item.priceHistory.filter((h) => h.timestamp >= dayStart).map((h) => h.price);
+
+  let dailyChange = null;
+  if (todayPrices.length >= 2) {
+    const firstToday = todayPrices[0];
+    dailyChange = item.currentPrice - firstToday;
+  }
+
+  let alertType = null;
+  let alertPercent = null;
+
+  if (changeVsReference <= -state.riseThreshold && !state.alertCooldowns.has(item.id + "_rise")) {
+    alertType = "rise";
+    alertPercent = Math.abs(changeVsReference);
+    state.alertCooldowns.set(item.id + "_rise", true);
+    setTimeout(() => state.alertCooldowns.delete(item.id + "_rise"), 60000);
+  } else if (changeVsReference >= state.dropThreshold && !state.alertCooldowns.has(item.id + "_drop")) {
+    alertType = "drop";
+    alertPercent = changeVsReference;
+    state.alertCooldowns.set(item.id + "_drop", true);
+    setTimeout(() => state.alertCooldowns.delete(item.id + "_drop"), 60000);
+  }
+
+  return { dailyChange, changeVsReference, alertType, alertPercent };
+}
+
+async function fetchSteamPriceBRL(name) {
+  const res = await fetch(`http://localhost:3000/api/price?name=${encodeURIComponent(name)}`, {
+    headers: { Accept: "application/json" },
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data = await res.json();
+  if (data.error) throw new Error(data.error);
+  return Number(data.price);
+}
+
+function pushHistory(item, price) {
+  if (!item.priceHistory) item.priceHistory = [];
+  item.priceHistory.push({ price, timestamp: Date.now() });
+  if (item.priceHistory.length > 1000) item.priceHistory = item.priceHistory.slice(-1000);
+}
+
+async function processNextRequest() {
+  if (!state.isRunning) return;
+
+  try {
+    const currentItems = [...state.items];
+    const results = await Promise.all(
+      currentItems.map((item) =>
+        fetchSteamPriceBRL(item.name)
+          .then((price) => ({ ...item, currentPrice: price, lastUpdated: new Date(), fetchError: null }))
+          .catch((err) => {
+            console.warn(`Falha ao buscar ${item.name}:`, err.message);
+            return { ...item, fetchError: err.message };
+          })
+      )
+    );
+
+    results.forEach((next) => {
+      const prev = state.items.find((i) => i.id === next.id);
+      if (prev) {
+        prev.previousPrice = prev.currentPrice;
+        prev.currentPrice = next.currentPrice;
+        prev.lastUpdated = next.lastUpdated;
+        prev.fetchError = next.fetchError;
+        if (prev.currentPrice != null) pushHistory(prev, prev.currentPrice);
+
+        const movement = detectMovement(prev);
+        if (movement && movement.alertType) {
+          addAlert(prev, movement.alertPercent);
+        }
+      }
+    });
+
+    state.items = results;
+    state.items.forEach((item) => refreshCard(item));
+  } catch (error) {
+    console.error("[WATCHLIST] ciclo falhou:", error);
+  }
+
+  scheduleNextRequest();
+}
+
+function scheduleNextRequest() {
+  if (!state.isRunning || !state.requestInterval) return;
+  state.requestTimer = setTimeout(processNextRequest, state.requestInterval);
+  if (elements.requestTimer && state.requestInterval) {
+    const secs = Math.floor(state.requestInterval / 1000);
+    const mm = Math.floor(secs / 60);
+    const ss = String(secs % 60).padStart(2, "0");
+    if (mm > 0) elements.requestTimer.textContent = `Próxima requisição: ${mm}:${ss}`;
+    else elements.requestTimer.textContent = `Próxima requisição: ${ss}s`;
+  }
+}
+
+async function addSkin(name) {
+  if (!name) throw new Error("Nome vazio");
+  if (state.items.find((i) => i.name === name)) throw new Error("Já adicionada");
+
+  const submitting = elements.form.querySelector('button[type="submit"]');
+  if (submitting) {
+    submitting.disabled = true;
+    submitting.textContent = "Buscando...";
+  }
+
+  let price = null;
+  try {
+    price = await fetchSteamPriceBRL(name);
+  } catch {
+    price = null;
+  }
+
+  const item = {
+    id: crypto.randomUUID(),
+    name,
+    appid: 252490,
+    image: "",
+    currentPrice: price,
+    previousPrice: price,
+    referencePrice: price,
+    priceHistory: price != null ? [{ price, timestamp: Date.now() }] : [],
+    lastUpdated: price != null ? new Date() : null,
+  };
+
+  state.items.push(item);
+  if (elements.body) {
+    elements.emptyState.style.display = "none";
+    elements.body.appendChild(renderCard(item));
+  }
+  updateStats();
+  return item;
+}
+
+function removeSkin(id) {
+  state.items = state.items.filter((i) => i.id !== id);
+  const card = document.querySelector(`.skin-card[data-id="${id}"]`);
+  if (card) card.remove();
+  if (state.items.length === 0 && elements.emptyState) elements.emptyState.style.display = "";
+  updateStats();
+}
+
+function updateStats() {
+  if (elements.statSkins) elements.statSkins.textContent = state.items.length;
+  if (elements.alertCount) elements.alertCount.textContent = state.alerts.length;
+}
+
+function startMonitoring() {
+  if (state.isRunning) return;
+  if (state.items.length === 0) {
+    alert("Adicione pelo menos uma skin antes de iniciar.");
+    return;
+  }
+  const intervalMs = Number(elements.intervalInput?.value || 10) * 1000;
+  state.dropThreshold = Number(elements.dropInput?.value || 5);
+  state.requestInterval = intervalMs;
+  updateStatus(true, `Monitorando ${state.items.length} skins`);
+  processNextRequest();
+  setInputsDisabled(true);
+}
+
+function stopMonitoring() {
+  if (!state.isRunning) return;
+  clearTimeout(state.requestTimer);
+  state.requestInterval = null;
+  updateStatus(false, "Parado");
+  setInputsDisabled(false);
+  if (elements.requestTimer) elements.requestTimer.textContent = "Próxima requisição: --";
+}
+
+function setInputsDisabled(disabled) {
+  document.querySelectorAll("#skinForm input, #skinForm select").forEach((el) => el.disabled = disabled);
+}
+
+async function init() {
+  if (!elements.body) {
+    console.error("Elementos essenciais não encontrados.");
+    return;
+  }
+
+  elements.form?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const name = elements.skinInput.value.trim();
+    if (!name) return;
+
+    setInputsDisabled(true);
+    try {
+      await addSkin(name);
+      elements.skinInput.value = "";
+    } catch (error) {
+      alert(error.message);
+    } finally {
+      setInputsDisabled(false);
+      elements.skinInput.focus();
+    }
+  });
+
+  elements.skinInput?.addEventListener("input", () => {
+    clearTimeout(state.searchDebounce);
+    state.searchDebounce = setTimeout(() => loadSkins(), 500);
+  });
+
+  elements.startBtn?.addEventListener("click", startMonitoring);
+  elements.stopBtn?.addEventListener("click", stopMonitoring);
+  elements.clearAlertsBtn?.addEventListener("click", () => {
+    state.alerts = [];
+    state.alertCooldowns.clear();
+    renderAlerts();
+    updateStats();
+  });
+  elements.clearAllBtn?.addEventListener("click", () => {
+    if (confirm("Tem certeza que deseja limpar todas as skins e o histórico?")) {
+      stopMonitoring();
+      state.items = [];
+      state.alerts = [];
+      state.alertCooldowns.clear();
+      elements.body.innerHTML = "";
+      elements.emptyState.style.display = "";
+      renderAlerts();
+      updateStats();
+    }
+  });
+
+  elements.body?.addEventListener("click", (event) => {
+    const card = event.target.closest(".skin-card");
+    if (!card) return;
+    const id = card.dataset.id;
+    const item = state.items.find((i) => i.id === id);
+    const removeBtn = event.target.closest("[data-action='remove']");
+    const historyBtn = event.target.closest("[data-action='open-history']");
+    const setRefBtn = event.target.closest("[data-action='set-reference']");
+
+    if (removeBtn && item) removeSkin(id);
+    else if (historyBtn && item) showChartModal(item.name);
+    else if (setRefBtn && item && item.currentPrice != null) {
+      item.referencePrice = item.currentPrice;
+      refreshCard(item);
+      console.log(`[REF] ${item.name}: R$ ${item.referencePrice.toFixed(2)}`);
+    }
+  });
+
+  elements.chartModal?.addEventListener("click", (event) => {
+    if (event.target === elements.chartModal) closeChartModal();
+  });
+
+  document.addEventListener("click", (event) => {
+    const steamBtn = event.target.closest("[data-action='open-steam']");
+    if (steamBtn) {
+      const skinName = elements.chartModalTitle?.textContent.replace("Histórico - ", "").trim();
+      if (skinName) window.open(`https://steamcommunity.com/market/listings/252490/${encodeURIComponent(skinName)}?l=portuguese`, "_blank");
+    }
+  });
+
+  elements.intervalInput.value = "10";
+  elements.dropInput.value = "5";
+  updateStatus(false, "Parado");
+  renderAlerts();
+  updateStats();
+}
+
+init();
