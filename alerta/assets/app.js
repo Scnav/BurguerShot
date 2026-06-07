@@ -468,9 +468,19 @@ async function processNextRequest() {
     results.forEach((next) => {
       const prev = state.items.find((i) => i.id === next.id);
       if (prev) {
-        const oldCurrentPrice = prev.currentPrice;
+        let oldCurrentPrice = prev.currentPrice;
+        let newPrice = next.currentPrice;
+
+        if (newPrice && oldCurrentPrice && oldCurrentPrice > 0) {
+          const changePercent = Math.abs((newPrice - oldCurrentPrice) / oldCurrentPrice) * 100;
+          if (changePercent > 50) {
+            console.warn(`[VALIDATION] ${prev.name}: Rejecting suspicious price jump from ${oldCurrentPrice} to ${newPrice} (${changePercent.toFixed(1)}%)`);
+            newPrice = null;
+          }
+        }
+
         prev.previousPrice = oldCurrentPrice;
-        prev.currentPrice = next.currentPrice;
+        prev.currentPrice = newPrice;
         prev.lastUpdated = next.lastUpdated;
         prev.fetchError = next.fetchError;
         if (prev.currentPrice != null) {
