@@ -193,21 +193,22 @@ function refreshCard(item) {
   }
 }
 
-function addAlert(item, alertType, alertPercent) {
-  state.alerts.unshift({
-    id: crypto.randomUUID(),
-    name: item.name,
-    currentPrice: item.currentPrice,
-    previousPrice: item.previousPrice,
-    alertType,
-    alertPercent,
-    date: new Date(),
-  });
-  state.alerts = state.alerts.slice(0, 30);
-  saveState();
-  renderAlerts();
-  notifyAlert(item, alertType, alertPercent);
-}
+function addAlert(item, alertType, alertPercent, referencePriceAtAlert) {
+   state.alerts.unshift({
+     id: crypto.randomUUID(),
+     name: item.name,
+     currentPrice: item.currentPrice,
+     referencePrice: referencePriceAtAlert || item.referencePrice,
+     previousPrice: item.previousPrice,
+     alertType,
+     alertPercent,
+     date: new Date(),
+   });
+   state.alerts = state.alerts.slice(0, 30);
+   saveState();
+   renderAlerts();
+   notifyAlert(item, alertType, alertPercent);
+ }
 
 async function notifyAlert(item, type, changePercent) {
   if (!("Notification" in window)) return;
@@ -278,7 +279,7 @@ function renderAlerts() {
         <div class="alert-item ${cls}">
           <div class="alert-body">
             <strong>${alert.name}</strong>
-            <span>${formatCurrency(alert.previousPrice)} → ${formatCurrency(alert.currentPrice)}</span>
+            <span>Ref: ${formatCurrency(alert.referencePrice)} → ${formatCurrency(alert.currentPrice)}</span>
             <small>${formatTime(alert.date)}</small>
           </div>
           <div class="alert-badge">${text}</div>
@@ -291,10 +292,17 @@ function renderAlerts() {
 function detectMovement(item) {
   const current = Number(item.currentPrice);
   const reference = Number(item.referencePrice);
-  if (isNaN(current) || isNaN(reference) || !isFinite(current) || !isFinite(reference)) return null;
-  if (current <= 0 || reference <= 0) return null;
+  if (isNaN(current) || isNaN(reference) || !isFinite(current) || !isFinite(reference)) {
+    console.warn(`[DEBUG] Invalid price - current: ${current}, reference: ${reference}`);
+    return null;
+  }
+  if (current <= 0 || reference <= 0) {
+    console.warn(`[DEBUG] Price not positive - current: ${current}, reference: ${reference}`);
+    return null;
+  }
 
   const changeVsReference = ((current - reference) / reference) * 100;
+  console.log(`[DEBUG] ${item.name}: current=${current}, ref=${reference}, change=${changeVsReference.toFixed(2)}%`);
 
   const now = new Date();
   const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
@@ -444,29 +452,26 @@ async function processNextRequest() {
     results.forEach((next) => {
       const prev = state.items.find((i) => i.id === next.id);
       if (prev) {
-        prev.previousPrice = prev.currentPrice;
+        const oldCurrentPrice = prev.currentPrice;
+        prev.previousPrice = oldCurrentPrice;
         prev.currentPrice = next.currentPrice;
         prev.lastUpdated = next.lastUpdated;
         prev.fetchError = next.fetchError;
         if (prev.currentPrice != null) {
           if (prev.referencePrice == null) {
             prev.referencePrice = prev.currentPrice;
-            prev.priceHistory = [{ price: prev.currentPrice, timestamp: Date.now() }];
-          } else {
-            pushHistory(prev, prev.currentPrice);
           }
+          pushHistory(prev, prev.currentPrice);
         }
 
         const movement = detectMovement(prev);
-        if (movement && movement.alertType && prev.currentPrice !== prev.referencePrice) {
+        if (movement && movement.alertType) {
+          addAlert(prev, movement.alertType, movement.alertPercent, prev.referencePrice);
           prev.referencePrice = prev.currentPrice;
-          addAlert(prev, movement.alertType, movement.alertPercent);
         }
+        refreshCard(prev);
       }
     });
-
-    state.items = results;
-    state.items.forEach((item) => refreshCard(item));
   } catch (error) {
     console.error("[WATCHLIST] ciclo falhou:", error);
   }

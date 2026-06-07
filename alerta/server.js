@@ -79,33 +79,57 @@ async function fetchWithPlaywright(skinName) {
     await page.goto(pageUrl, { waitUntil: "networkidle", timeout: 50000 });
     await page.waitForTimeout(10000);
 
-    const result = await page.evaluate(() => {
-      const prices = Array.from(document.body.innerHTML.matchAll(/R\$\s*([\d]{1,6}(?:\.\d{3})*,\d{2})/g));
-      const priceValues = prices
-        .map((m) => parseFloat(m[1].replace(/\./g, "").replace(",", ".")))
-        .filter((v) => !isNaN(v) && v > 0 && v < 50000);
+const result = await page.evaluate((skinName) => {
+       const prices = Array.from(document.body.innerHTML.matchAll(/R\$\s*([\d]{1,6}(?:\.\d{3})*,\d{2})/g));
+       const priceValues = prices
+         .map((m) => parseFloat(m[1].replace(/\./g, "").replace(",", ".")))
+         .filter((v) => !isNaN(v) && v > 0 && v < 50000);
 
-      let image = "";
-      const html = document.body.innerHTML;
-      let iconMatch = html.match(/"icon"\s*:\s*"(https:\/\/steamcommunity-a\.akamaihd\.net\/economy\/image\/[^"]+)"/);
-      if (!iconMatch) {
-        iconMatch = html.match(/"iconUrl"\s*:\s*"(https:\/\/steamcommunity-a\.akamaihd\.net\/economy\/image\/[^"]+)"/);
-      }
-      if (iconMatch) {
-        image = iconMatch[1].replace(/thumb[_&]120x120/, "360x");
-      }
-      if (!image) {
-        try {
-          const xpath = "//*[@id='CommunityTemplate']/div/div/div/div[1]/div[2]/div[2]/div/div[1]/div/div/div[2]/div[1]/div[1]/img";
-          const res = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
-          if (res.singleNodeValue && res.singleNodeValue.src) {
-            image = res.singleNodeValue.src;
-          }
-        } catch (e) {}
-      }
+       let image = "";
+       const html = document.body.innerHTML;
+       let iconMatch = html.match(/"icon"\s*:\s*"(https:\/\/steamcommunity-a\.akamaihd\.net\/economy\/image\/[^"]+)"/);
+       if (!iconMatch) {
+         iconMatch = html.match(/"iconUrl"\s*:\s*"(https:\/\/steamcommunity-a\.akamaihd\.net\/economy\/image\/[^"]+)"/);
+       }
+       if (iconMatch) {
+         image = iconMatch[1].replace(/thumb[_&]120x120/, "360x");
+       }
+       if (!image) {
+         try {
+           const xpath = "//*[@id='CommunityTemplate']/div/div/div/div[1]/div[2]/div[2]/div/div[1]/div/div/div[2]/div[1]/div[1]/img";
+           const res = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
+           if (res.singleNodeValue && res.singleNodeValue.src) {
+             image = res.singleNodeValue.src;
+           }
+         } catch (e) {}
+       }
 
-      return { price: priceValues[0] || null, image };
-    });
+       let price = null;
+       const priceSelectors = [
+         "#market_commodity_prices > span > span",
+         "#market_market_buyorder_price",
+         ".market_listing_price.market_listing_price_with_fee",
+         ".market_table_header_column.header_item_price._sortable",
+       ];
+
+       for (const sel of priceSelectors) {
+         const el = document.querySelector(sel);
+         if (el) {
+           const text = el.textContent || "";
+           const m = text.match(/R\$\s*([\d]{1,6}(?:\.\d{3})*,\d{2})/);
+           if (m) {
+             price = parseFloat(m[1].replace(/\./g, "").replace(",", "."));
+             break;
+           }
+         }
+       }
+
+       if (!price && priceValues.length > 0) {
+         price = priceValues[0];
+       }
+
+       return { price, image };
+     }, skinName);
 
     await page.close();
 
@@ -247,9 +271,13 @@ async function fetchSteamPrice(skinName) {
     finalImage = `/img-proxy/${imagePath}`;
   }
 
-  if (result.price && !isNaN(result.price) && result.price > 0) {
+  if (result.price && !isNaN(result.price) && result.price > 0 && result.price < 50000) {
     console.log(`[PLAYWRIGHT] ${skinName}: R$ ${result.price.toFixed(2)}`);
     return { price: result.price, image: finalImage };
+  }
+
+  if (result.price) {
+    console.log(`[PLAYWRIGHT] ${skinName}: preço descartado R$ ${result.price} (fora da faixa)`);
   }
 
   console.log(`[PLAYWRIGHT] ${skinName}: falhou -> API USD`);
