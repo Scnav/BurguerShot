@@ -482,8 +482,16 @@ async function processNextRequest() {
         if (newPrice && oldCurrentPrice && oldCurrentPrice > 0) {
           const changePercent = Math.abs((newPrice - oldCurrentPrice) / oldCurrentPrice) * 100;
           if (changePercent > 50) {
-            console.warn(`[VALIDATION] ${prev.name}: Rejecting suspicious price jump from ${oldCurrentPrice} to ${newPrice} (${changePercent.toFixed(1)}%)`);
-            newPrice = oldCurrentPrice;
+            if (suspiciousPrices.has(prev.id)) {
+              console.log(`[VALIDATION] ${prev.name}: Accepting price after 2nd suspicious detection: ${oldCurrentPrice} -> ${newPrice}`);
+              suspiciousPrices.delete(prev.id);
+            } else {
+              console.warn(`[VALIDATION] ${prev.name}: Rejecting suspicious price jump, will accept next time: ${oldCurrentPrice} -> ${newPrice} (${changePercent.toFixed(1)}%)`);
+              suspiciousPrices.add(prev.id);
+              newPrice = oldCurrentPrice;
+            }
+          } else {
+            suspiciousPrices.delete(prev.id);
           }
         }
 
@@ -662,6 +670,7 @@ function stopMonitoring() {
   }
   alertedAbove.clear();
   alertedBelow.clear();
+  suspiciousPrices.clear();
   updateStatus(false, "Parado");
   setInputsDisabled(false);
   if (elements.requestTimer) elements.requestTimer.textContent = "Próxima requisição: --";
