@@ -465,6 +465,30 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+res.writeHead(404, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ error: "Not found" }));
+    return;
+  }
+
+  if (pathname === "/api/cleanup") {
+    console.log("[CLEANUP] Removing invalid price entries");
+    let removedCount = 0;
+    for (const skinName in priceHistory) {
+      const originalLength = priceHistory[skinName].length;
+      priceHistory[skinName] = priceHistory[skinName].filter(entry => {
+        if (entry.price === 119.99 || entry.price === 120 || entry.price > 1000) {
+          removedCount++;
+          return false;
+        }
+        return true;
+      });
+    }
+    savePriceHistory();
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ removed: removedCount, message: "Cleanup complete" }));
+    return;
+  }
+
   res.writeHead(404, { "Content-Type": "application/json" });
   res.end(JSON.stringify({ error: "Not found" }));
 });
