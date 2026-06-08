@@ -465,16 +465,10 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-res.writeHead(404, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ error: "Not found" }));
-    return;
-  }
-
   if (pathname === "/api/cleanup") {
     console.log("[CLEANUP] Removing invalid price entries");
     let removedCount = 0;
     for (const skinName in priceHistory) {
-      const originalLength = priceHistory[skinName].length;
       priceHistory[skinName] = priceHistory[skinName].filter(entry => {
         if (entry.price === 119.99 || entry.price === 120 || entry.price > 1000) {
           removedCount++;
@@ -505,4 +499,5 @@ server.listen(PORT, () => {
   console.log(`  - GET /api/price?name=...`);
   console.log(`  - GET /api/history?name=...`);
   console.log(`  - GET /api/stats?name=...`);
+  console.log(`  - GET /api/cleanup`);
 });
