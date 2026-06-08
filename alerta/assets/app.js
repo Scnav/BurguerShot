@@ -415,39 +415,63 @@ async function renderChart(skinName) {
     if (ctx.chart) ctx.chart.destroy();
     const prices = history.map(h => h.price);
     const labels = history.map(h => new Date(h.timestamp).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }));
-    ctx.chart = new Chart(ctx, {
-      type: "line",
-      data: {
-        labels,
-        datasets: [{
-          label: "Preço",
-          data: prices,
-          borderColor: "#22c55e",
-          borderWidth: 2,
-          pointRadius: 1,
-          tension: 0.4,
-        }],
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { legend: false },
-        scales: {
-          x: { ticks: { color: "#94a3b8" }, grid: { color: "#243244" } },
-          y: { ticks: { color: "#94a3b8", callback: v => "R$ " + v }, grid: { color: "#243244" } },
-        },
-      },
-    });
-    const statsRes = await fetch(`http://localhost:${port}/api/stats?name=${encodeURIComponent(skinName)}`);
-    const stats = statsRes.ok ? await statsRes.json() : {};
+ctx.chart = new Chart(ctx, {
+       type: "line",
+       data: {
+         labels,
+         datasets: [{
+           label: "Preço",
+           data: prices,
+           borderColor: "#22c55e",
+           borderWidth: 2,
+           pointRadius: 1,
+           tension: 0.4,
+         }],
+       },
+       options: {
+         responsive: true,
+         maintainAspectRatio: false,
+         plugins: { legend: false },
+         scales: {
+           x: { ticks: { color: "#94a3b8" }, grid: { color: "#243244" } },
+           y: { ticks: { color: "#94a3b8", callback: v => "R$ " + v }, grid: { color: "#243244" } },
+         },
+       },
+     });
+
+    const now = new Date();
+    const oneDayAgo = now.getTime() - 24 * 60 * 60 * 1000;
+    const oneWeekAgo = now.getTime() - 7 * 24 * 60 * 60 * 1000;
+    const oneMonthAgo = now.getTime() - 30 * 24 * 60 * 60 * 1000;
+    const oneYearAgo = now.getTime() - 365 * 24 * 60 * 60 * 1000;
+
+    const pricesToday = history.filter(h => h.timestamp >= oneDayAgo).map(h => h.price);
+    const pricesWeek = history.filter(h => h.timestamp >= oneWeekAgo).map(h => h.price);
+    const pricesMonth = history.filter(h => h.timestamp >= oneMonthAgo).map(h => h.price);
+    const pricesYear = history.filter(h => h.timestamp >= oneYearAgo).map(h => h.price);
+
+    const dayMin = pricesToday.length ? Math.min(...pricesToday) : null;
+    const dayMax = pricesToday.length ? Math.max(...pricesToday) : null;
+    const weekMin = pricesWeek.length ? Math.min(...pricesWeek) : null;
+    const weekMax = pricesWeek.length ? Math.max(...pricesWeek) : null;
+    const monthMin = pricesMonth.length ? Math.min(...pricesMonth) : null;
+    const monthMax = pricesMonth.length ? Math.max(...pricesMonth) : null;
+    const yearMin = pricesYear.length ? Math.min(...pricesYear) : null;
+    const yearMax = pricesYear.length ? Math.max(...pricesYear) : null;
+
     const statsEl = document.getElementById("chartStats");
     if (statsEl) {
-      statsEl.innerHTML = `
-        <div class="stat-box"><span class="stat-label">Mínimo</span><span class="stat-value">${stats.min ? formatCurrency(stats.min) : "--"}</span></div>
-        <div class="stat-box"><span class="stat-label">Máximo</span><span class="stat-value">${stats.max ? formatCurrency(stats.max) : "--"}</span></div>
-        <div class="stat-box"><span class="stat-label">Média</span><span class="stat-value">${stats.avg ? formatCurrency(stats.avg) : "--"}</span></div>
-        <div class="stat-box"><span class="stat-label">Atual</span><span class="stat-value">${stats.last ? formatCurrency(stats.last) : "--"}</span></div>
-      `;
+       statsEl.innerHTML = `
+         <div class="stat-box"><span class="stat-label">Min</span><span class="stat-value">${stats.min ? formatCurrency(stats.min) : "--"}</span></div>
+         <div class="stat-box"><span class="stat-label">Max</span><span class="stat-value">${stats.max ? formatCurrency(stats.max) : "--"}</span></div>
+         <div class="stat-box"><span class="stat-label">Avg</span><span class="stat-value">${stats.avg ? formatCurrency(stats.avg) : "--"}</span></div>
+         <div class="stat-box"><span class="stat-label">Atual</span><span class="stat-value">${stats.last ? formatCurrency(stats.last) : "--"}</span></div>
+         <div class="stat-box"><span class="stat-label">Hoje</span><span class="stat-value">${dayMin && dayMax ? formatCurrency(dayMin) + "-" + formatCurrency(dayMax) : "--"}</span></div>
+         <div class="stat-box"><span class="stat-label">Semana</span><span class="stat-value">${weekMin && weekMax ? formatCurrency(weekMin) + "-" + formatCurrency(weekMax) : "--"}</span></div>
+         <div class="stat-box"><span class="stat-label">Mês</span><span class="stat-value">${monthMin && monthMax ? formatCurrency(monthMin) + "-" + formatCurrency(monthMax) : "--"}</span></div>
+<div class="stat-box"><span class="stat-label">Ano</span><span class="stat-value">${yearMin && yearMax ? formatCurrency(yearMin) + "-" + formatCurrency(yearMax) : "--"}</span></div>
+        `;
+      }
     }
   }
 }
