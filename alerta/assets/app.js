@@ -360,7 +360,7 @@ async function fetchSteamPriceBRL(name) {
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const data = await res.json();
   if (data.error) throw new Error(data.error);
-  return Number(data.price);
+  return { price: Number(data.price), image: data.image };
 }
 
 function pushHistory(item, price) {
@@ -457,7 +457,15 @@ async function processNextRequest() {
     const results = await Promise.all(
       currentItems.map((item) =>
         fetchSteamPriceBRL(item.name)
-          .then((price) => ({ ...item, currentPrice: price, lastUpdated: new Date(), fetchError: null }))
+          .then((result) => {
+            const price = result?.price;
+            const image = result?.image;
+            if (price == null) {
+              console.warn(`[NO-PRICE] ${item.name}: usando último preço ${item.currentPrice || "nenhum"}`);
+              return { ...item, fetchError: "No price found" };
+            }
+            return { ...item, currentPrice: price, image: image || item.image, lastUpdated: new Date(), fetchError: null };
+          })
           .catch((err) => {
             console.warn(`Falha ao buscar ${item.name}:`, err.message);
             return { ...item, fetchError: err.message };
