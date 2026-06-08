@@ -415,29 +415,32 @@ async function renderChart(skinName) {
     if (ctx.chart) ctx.chart.destroy();
     const prices = history.map(h => h.price);
     const labels = history.map(h => new Date(h.timestamp).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }));
-ctx.chart = new Chart(ctx, {
-       type: "line",
-       data: {
-         labels,
-         datasets: [{
-           label: "Preço",
-           data: prices,
-           borderColor: "#22c55e",
-           borderWidth: 2,
-           pointRadius: 1,
-           tension: 0.4,
-         }],
-       },
-       options: {
-         responsive: true,
-         maintainAspectRatio: false,
-         plugins: { legend: false },
-         scales: {
-           x: { ticks: { color: "#94a3b8" }, grid: { color: "#243244" } },
-           y: { ticks: { color: "#94a3b8", callback: v => "R$ " + v }, grid: { color: "#243244" } },
-         },
-       },
-     });
+    ctx.chart = new Chart(ctx, {
+      type: "line",
+      data: {
+        labels,
+        datasets: [{
+          label: "Preço",
+          data: prices,
+          borderColor: "#22c55e",
+          borderWidth: 2,
+          pointRadius: 1,
+          tension: 0.4,
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: false },
+        scales: {
+          x: { ticks: { color: "#94a3b8" }, grid: { color: "#243244" } },
+          y: { ticks: { color: "#94a3b8", callback: v => "R$ " + v }, grid: { color: "#243244" } },
+        },
+      },
+    });
+
+    const statsRes = await fetch(`http://localhost:${port}/api/stats?name=${encodeURIComponent(skinName)}`);
+    const stats = statsRes.ok ? await statsRes.json() : {};
 
     const now = new Date();
     const oneDayAgo = now.getTime() - 24 * 60 * 60 * 1000;
@@ -461,17 +464,16 @@ ctx.chart = new Chart(ctx, {
 
     const statsEl = document.getElementById("chartStats");
     if (statsEl) {
-       statsEl.innerHTML = `
-         <div class="stat-box"><span class="stat-label">Min</span><span class="stat-value">${stats.min ? formatCurrency(stats.min) : "--"}</span></div>
-         <div class="stat-box"><span class="stat-label">Max</span><span class="stat-value">${stats.max ? formatCurrency(stats.max) : "--"}</span></div>
-         <div class="stat-box"><span class="stat-label">Avg</span><span class="stat-value">${stats.avg ? formatCurrency(stats.avg) : "--"}</span></div>
-         <div class="stat-box"><span class="stat-label">Atual</span><span class="stat-value">${stats.last ? formatCurrency(stats.last) : "--"}</span></div>
-         <div class="stat-box"><span class="stat-label">Hoje</span><span class="stat-value">${dayMin && dayMax ? formatCurrency(dayMin) + "-" + formatCurrency(dayMax) : "--"}</span></div>
-         <div class="stat-box"><span class="stat-label">Semana</span><span class="stat-value">${weekMin && weekMax ? formatCurrency(weekMin) + "-" + formatCurrency(weekMax) : "--"}</span></div>
-         <div class="stat-box"><span class="stat-label">Mês</span><span class="stat-value">${monthMin && monthMax ? formatCurrency(monthMin) + "-" + formatCurrency(monthMax) : "--"}</span></div>
-<div class="stat-box"><span class="stat-label">Ano</span><span class="stat-value">${yearMin && yearMax ? formatCurrency(yearMin) + "-" + formatCurrency(yearMax) : "--"}</span></div>
-        `;
-      }
+      statsEl.innerHTML = `
+        <div class="stat-box"><span class="stat-label">Min</span><span class="stat-value">${stats.min ? formatCurrency(stats.min) : "--"}</span></div>
+        <div class="stat-box"><span class="stat-label">Max</span><span class="stat-value">${stats.max ? formatCurrency(stats.max) : "--"}</span></div>
+        <div class="stat-box"><span class="stat-label">Avg</span><span class="stat-value">${stats.avg ? formatCurrency(stats.avg) : "--"}</span></div>
+        <div class="stat-box"><span class="stat-label">Atual</span><span class="stat-value">${stats.last ? formatCurrency(stats.last) : "--"}</span></div>
+        <div class="stat-box"><span class="stat-label">Hoje</span><span class="stat-value">${dayMin && dayMax ? formatCurrency(dayMin) + "-" + formatCurrency(dayMax) : "--"}</span></div>
+        <div class="stat-box"><span class="stat-label">Semana</span><span class="stat-value">${weekMin && weekMax ? formatCurrency(weekMin) + "-" + formatCurrency(weekMax) : "--"}</span></div>
+        <div class="stat-box"><span class="stat-label">Mês</span><span class="stat-value">${monthMin && monthMax ? formatCurrency(monthMin) + "-" + formatCurrency(monthMax) : "--"}</span></div>
+        <div class="stat-box"><span class="stat-label">Ano</span><span class="stat-value">${yearMin && yearMax ? formatCurrency(yearMin) + "-" + formatCurrency(yearMax) : "--"}</span></div>
+      `;
     }
   }
 }
