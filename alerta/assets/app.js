@@ -249,7 +249,7 @@ async function notifyAlert(item, type, changePercent) {
   const yearMin = pricesYear.length ? Math.min(...pricesYear) : null;
   const yearMax = pricesYear.length ? Math.max(...pricesYear) : null;
 
-  console.log(`[ALERTA] ${item.name}: ${type === "rise" ? "↑" : "↓"} ${changePercent.toFixed(1)}% (Ref: ${formatCurrency(item.referencePrice)} → ${formatCurrency(item.currentPrice)} (${formatNetPrice(item.currentPrice)} líquido))`);
+  console.log(`[ALERTA] ${item.name}: ${type === "rise" ? "↑" : "↓"} ${changePercent.toFixed(1)}% (Ref: ${formatCurrency(item.referencePrice)} → ${formatCurrency(item.currentPrice)}${type === "drop" ? ` (${formatCurrency(item.referencePrice * 0.87)} líquido vendido)` : ` (${formatCurrency(item.currentPrice * 0.87)} líquido)`})`);
   if (dayMin && dayMax) console.log(`  Hoje: ${formatCurrency(dayMin)} - ${formatCurrency(dayMax)}`);
   if (weekMin && weekMax) console.log(`  Semana: ${formatCurrency(weekMin)} - ${formatCurrency(weekMax)}`);
   if (monthMin && monthMax) console.log(`  Mês: ${formatCurrency(monthMin)} - ${formatCurrency(monthMax)}`);
@@ -261,10 +261,10 @@ async function notifyAlert(item, type, changePercent) {
   if (monthMin && monthMax) parts.push(`Mês: ${formatCurrency(monthMin)}-${formatCurrency(monthMax)}`);
   if (yearMin && yearMax) parts.push(`Ano: ${formatCurrency(yearMin)}-${formatCurrency(yearMax)}`);
   const statsInfo = parts.join("\n");
-  const netPrice = item.currentPrice * 0.87;
+  const netPrice = type === "drop" ? item.referencePrice * 0.87 : item.currentPrice * 0.87;
   const body = type === "rise"
     ? `${item.name} valorizou ${changePercent.toFixed(1)}%\n${formatCurrency(item.currentPrice)} (${formatCurrency(netPrice)} líquido)\n${statsInfo}`.trim()
-    : `${item.name} caiu ${changePercent.toFixed(1)}%\n${formatCurrency(item.currentPrice)} (${formatCurrency(netPrice)} líquido)\n${statsInfo}`.trim();
+    : `${item.name} caiu ${changePercent.toFixed(1)}%\n${formatCurrency(item.currentPrice)} (${formatCurrency(item.referencePrice)} → ${formatCurrency(netPrice)} líquido vendido)\n${statsInfo}`.trim();
   const show = () => new Notification("Alerta de preço Rust", { body, icon: item.image });
   if (Notification.permission === "granted") show();
   else if (Notification.permission !== "denied") Notification.requestPermission().then(show);
@@ -288,12 +288,13 @@ function renderAlerts() {
       const isRise = alert.alertType === "rise";
       const cls = isRise ? "rise" : "drop";
       const text = isRise ? `↑ ${alert.alertPercent.toFixed(1)}% (valorizou)` : `↓ ${alert.alertPercent.toFixed(1)}% (caiu)`;
-      const netPrice = alert.currentPrice * 0.87;
+      const netPrice = isRise ? alert.currentPrice * 0.87 : alert.referencePrice * 0.87;
+      const netLabel = isRise ? formatNetPrice(netPrice) : `${formatNetPrice(netPrice)} vendido`;
       return `
         <div class="alert-item ${cls}">
           <div class="alert-body">
             <strong>${alert.name}</strong>
-            <span>Ref: ${formatCurrency(alert.referencePrice)} → ${formatCurrency(alert.currentPrice)} (${formatNetPrice(netPrice)})</span>
+            <span>Ref: ${formatCurrency(alert.referencePrice)} → ${formatCurrency(alert.currentPrice)} (${netLabel})</span>
             <small>${formatTime(alert.date)}</small>
           </div>
           <div class="alert-badge">${text}</div>
