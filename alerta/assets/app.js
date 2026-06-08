@@ -262,10 +262,11 @@ async function notifyAlert(item, type, changePercent) {
   if (monthMin && monthMax) parts.push(`Mês: ${formatCurrency(monthMin)}-${formatCurrency(monthMax)}`);
   if (yearMin && yearMax) parts.push(`Ano: ${formatCurrency(yearMin)}-${formatCurrency(yearMax)}`);
   const statsInfo = parts.join("\n");
-  const netPrice = item.referencePrice * 0.87;
+  const netPriceRise = item.currentPrice;
+  const netPriceDrop = item.referencePrice;
   const body = type === "rise"
-    ? `${item.name} valorizou ${changePercent.toFixed(1)}%\nV:${formatCurrency(item.referencePrice)} A:${formatCurrency(item.currentPrice)} L:${formatCurrency(netPrice)}\n${statsInfo}`.trim()
-    : `${item.name} caiu ${changePercent.toFixed(1)}%\nV:${formatCurrency(item.referencePrice)} A:${formatCurrency(item.currentPrice)} L:${formatCurrency(netPrice)} (venda)\n${statsInfo}`.trim();
+    ? `${item.name} valorizou ${changePercent.toFixed(1)}%\nV:${formatCurrency(item.referencePrice)} A:${formatCurrency(item.currentPrice)} L:${formatNetPrice(netPriceRise)}\n${statsInfo}`.trim()
+    : `${item.name} caiu ${changePercent.toFixed(1)}%\nV:${formatCurrency(item.referencePrice)} A:${formatCurrency(item.currentPrice)} L:${formatNetPrice(netPriceDrop)} (venda)\n${statsInfo}`.trim();
   const show = () => new Notification("Alerta de preço Rust", { body, icon: item.image });
   if (Notification.permission === "granted") show();
   else if (Notification.permission !== "denied") Notification.requestPermission().then(show);
@@ -289,8 +290,8 @@ function renderAlerts() {
       const isRise = alert.alertType === "rise";
       const cls = isRise ? "rise" : "drop";
       const text = isRise ? `↑ ${alert.alertPercent.toFixed(1)}% (valorizou)` : `↓ ${alert.alertPercent.toFixed(1)}% (caiu)`;
-      const netPrice = isRise ? alert.currentPrice * 0.87 : alert.referencePrice * 0.87;
-      const netLabel = isRise ? formatNetPrice(netPrice) : `${formatNetPrice(netPrice)} (venda)`;
+      const netPrice = isRise ? alert.currentPrice : alert.referencePrice;
+      const netLabel = formatNetPrice(netPrice) + (isRise ? "" : " (venda)");
       return `
         <div class="alert-item ${cls}">
           <div class="alert-body">
