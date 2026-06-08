@@ -483,12 +483,12 @@ async function processNextRequest() {
           const changePercent = Math.abs((newPrice - oldCurrentPrice) / oldCurrentPrice) * 100;
           if (changePercent > 50) {
             console.warn(`[VALIDATION] ${prev.name}: Rejecting suspicious price jump from ${oldCurrentPrice} to ${newPrice} (${changePercent.toFixed(1)}%)`);
-            newPrice = null;
+            newPrice = oldCurrentPrice;
           }
         }
 
         prev.previousPrice = oldCurrentPrice;
-        prev.currentPrice = newPrice;
+        prev.currentPrice = newPrice ?? oldCurrentPrice;
         prev.lastUpdated = next.lastUpdated;
         prev.fetchError = next.fetchError;
         if (prev.currentPrice != null) {
